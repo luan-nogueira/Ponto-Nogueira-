@@ -45,6 +45,10 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import br.com.ponto.app.dados.Batida
+import coil.compose.AsyncImage
+import androidx.compose.foundation.border
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import br.com.ponto.app.dados.TipoBatida
 import kotlinx.coroutines.delay
 import java.time.Instant
@@ -126,6 +130,8 @@ fun TelaPrincipal(
     ) {
         item {
             Row(Modifier.fillMaxWidth().padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                LogoEmpresa(estado.logoUrl, estado.empresa)
+                Spacer(Modifier.size(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text("Olá, ${estado.nome.substringBefore(' ')}", fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
                     Text(DateTimeFormatter.ofPattern("EEEE, dd/MM", java.util.Locale("pt", "BR")).withZone(fuso).format(agora), color = Color.Gray)
@@ -240,6 +246,22 @@ fun TelaPrincipal(
             title = { Text("Sair da conta?") },
             text = { Text("Você vai precisar do e-mail e da senha para entrar de novo.") },
         )
+    }
+}
+
+/** Logo da empresa do colaborador (cada empresa cliente tem a sua); sem logo, mostra as iniciais. */
+@Composable
+private fun LogoEmpresa(url: String?, nome: String) {
+    val forma = RoundedCornerShape(10.dp)
+    Box(
+        Modifier.size(52.dp).clip(forma).background(Color.White).border(1.dp, Color(0xFFE5E7EB), forma),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (url != null) {
+            AsyncImage(model = url, contentDescription = nome, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize().padding(4.dp))
+        } else {
+            Text(nome.take(2).uppercase(), fontWeight = FontWeight.Bold, color = Verde)
+        }
     }
 }
 

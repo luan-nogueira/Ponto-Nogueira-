@@ -107,4 +107,8 @@ data class PontoLocalizacao(
 )
 
 @Serializable
-data class Empresa(@SerialName("intervalo_rastreio_s") val intervaloRastreioS: Int = 300)
+data class Empresa(
+    val nome: String = "",
+    @SerialName("logo_url") val logoUrl: String? = null,
+    @SerialName("intervalo_rastreio_s") val intervaloRastreioS: Int = 300,
+)

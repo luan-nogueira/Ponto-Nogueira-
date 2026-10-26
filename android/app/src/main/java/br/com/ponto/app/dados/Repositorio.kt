@@ -83,7 +83,12 @@ class Repositorio(private val contexto: Context, val api: SupabaseApi = Supabase
         } ?: emptyList()
         private set(v) = prefs.edit().putString("locais", json.encodeToString(ListSerializer(Local.serializer()), v)).apply()
 
-    val intervaloRastreioS get() = prefs.getInt("intervalo_rastreio_s", 300)
+    /** Empresa do colaborador (nome, logo e configurações), guardada para funcionar sem internet. */
+    var empresa: Empresa?
+        get() = prefs.getString("empresa", null)?.let { runCatching { json.decodeFromString(Empresa.serializer(), it) }.getOrNull() }
+        private set(v) = prefs.edit().putString("empresa", v?.let { json.encodeToString(Empresa.serializer(), it) }).apply()
+
+    val intervaloRastreioS get() = empresa?.intervaloRastreioS ?: 300
 
     /** Locais do colaborador; com posição, o servidor calcula distância e se está dentro. */
     suspend fun atualizarLocais(lat: Double? = null, lng: Double? = null): List<Local> {
@@ -96,10 +101,8 @@ class Repositorio(private val contexto: Context, val api: SupabaseApi = Supabase
     }
 
     suspend fun atualizarConfiguracao() {
-        val texto = api.consultar(token(), "empresas?select=intervalo_rastreio_s")
-        json.decodeFromString(ListSerializer(Empresa.serializer()), texto).firstOrNull()?.let {
-            prefs.edit().putInt("intervalo_rastreio_s", it.intervaloRastreioS).apply()
-        }
+        val texto = api.consultar(token(), "empresas?select=nome,logo_url,intervalo_rastreio_s")
+        json.decodeFromString(ListSerializer(Empresa.serializer()), texto).firstOrNull()?.let { empresa = it }
     }
 
     // Jornada --------------------------------------------------------------------

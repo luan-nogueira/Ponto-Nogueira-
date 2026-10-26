@@ -30,6 +30,8 @@ data class Cerca(val local: Local, val distanciaM: Double, val dentro: Boolean)
 data class EstadoPonto(
     val logado: Boolean = false,
     val nome: String = "",
+    val empresa: String = "",
+    val logoUrl: String? = null,
     val posicao: Posicao? = null,
     val cerca: Cerca? = null,
     val semLocal: Boolean = false,
@@ -46,7 +48,9 @@ data class EstadoPonto(
 
 class PontoViewModel(app: Application) : AndroidViewModel(app) {
     private val repo: Repositorio = (app as PontoApp).repositorio
-    private val _estado = MutableStateFlow(EstadoPonto(logado = repo.logado, nome = repo.perfil?.nome.orEmpty()))
+    private val _estado = MutableStateFlow(
+        EstadoPonto(logado = repo.logado, nome = repo.perfil?.nome.orEmpty()).comEmpresa()
+    )
     val estado = _estado.asStateFlow()
     private var gps: Job? = null
 
@@ -55,7 +59,7 @@ class PontoViewModel(app: Application) : AndroidViewModel(app) {
     fun entrar(email: String, senha: String, aoTerminar: (String?) -> Unit) = viewModelScope.launch {
         try {
             repo.entrar(email, senha)
-            _estado.update { it.copy(logado = true, nome = repo.perfil?.nome.orEmpty(), erro = null) }
+            _estado.update { it.copy(logado = true, nome = repo.perfil?.nome.orEmpty(), erro = null).comEmpresa() }
             atualizar()
             aoTerminar(null)
         } catch (e: Exception) {
@@ -94,7 +98,7 @@ class PontoViewModel(app: Application) : AndroidViewModel(app) {
         runCatching { repo.atualizarProximas() }.onSuccess { p -> _estado.update { it.copy(proximas = p) } }
         runCatching { repo.batidasDeHoje() }.onSuccess { h -> _estado.update { it.copy(hoje = h) } }
             .onFailure { e -> if (e is ErroServidor && e.codigo == 401) expirou() }
-        runCatching { repo.atualizarConfiguracao() }
+        runCatching { repo.atualizarConfiguracao() }.onSuccess { _estado.update { it.comEmpresa() } }
         _estado.update { it.copy(pendentes = repo.pendentes().size) }
         RastreioService.sincronizar(getApplication())
     }
@@ -153,6 +157,8 @@ class PontoViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun fecharAvisos() = _estado.update { it.copy(comprovante = null, salvaOffline = null, erro = null) }
+
+    private fun EstadoPonto.comEmpresa() = copy(empresa = repo.empresa?.nome.orEmpty(), logoUrl = repo.empresa?.logoUrl)
 
     private fun expirou() {
         _estado.value = EstadoPonto(erro = "Sua sessão expirou. Entre de novo.")

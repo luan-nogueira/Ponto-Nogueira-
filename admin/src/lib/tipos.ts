@@ -71,3 +71,10 @@ export interface Alerta {
   criado_em: string;
   usuarios?: { nome: string } | null;
 }
+
+export interface Empresa {
+  id: string;
+  nome: string;
+  cnpj: string | null;
+  logo_url: string | null;
+}

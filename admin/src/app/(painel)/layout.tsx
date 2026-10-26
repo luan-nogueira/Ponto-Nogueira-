@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Sessao, useUsuario } from "@/components/Sessao";
+import { Sessao, useEmpresa, useUsuario } from "@/components/Sessao";
 import { supabase } from "@/lib/supabase";
 
 const menu = [
@@ -12,22 +12,37 @@ const menu = [
   { href: "/alertas", nome: "Alertas" },
   { href: "/colaboradores", nome: "Colaboradores" },
   { href: "/locais", nome: "Locais" },
+  { href: "/empresa", nome: "Empresa", soAdmin: true },
 ];
 
 function Estrutura({ children }: { children: React.ReactNode }) {
   const caminho = usePathname();
   const usuario = useUsuario();
+  const { empresa } = useEmpresa();
   const [aberto, setAberto] = useState(false);
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
       <aside className="border-b border-gray-200 bg-white md:w-56 md:border-b-0 md:border-r">
         <div className="flex items-center justify-between px-4 py-4">
-          <span className="text-lg font-semibold text-emerald-800">Ponto</span>
+          <Link href="/" className="flex min-w-0 items-center gap-3">
+            {empresa.logo_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={empresa.logo_url} alt={empresa.nome} className="h-10 w-10 shrink-0 rounded object-contain md:h-12 md:w-12" />
+            ) : (
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-emerald-700 text-sm font-semibold text-white">
+                {empresa.nome.slice(0, 2).toUpperCase()}
+              </span>
+            )}
+            <span className="min-w-0">
+              <span className="block text-sm font-semibold leading-tight text-gray-900">{empresa.nome}</span>
+              <span className="block text-xs text-gray-500">Controle de ponto</span>
+            </span>
+          </Link>
           <button className="md:hidden text-sm text-gray-600" onClick={() => setAberto(!aberto)}>Menu</button>
         </div>
         <nav className={`${aberto ? "block" : "hidden"} px-2 pb-4 md:block`}>
-          {menu.map((item) => {
+          {menu.filter((item) => !item.soAdmin || usuario.papel === "admin").map((item) => {
             const ativo = item.href === "/" ? caminho === "/" : caminho.startsWith(item.href);
             return (
               <Link

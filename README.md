@@ -47,7 +47,7 @@ NEXT_PUBLIC_SUPABASE_URL=https://SEU-PROJETO.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=sua-chave-anon
 ```
 
-Entre com o admin, cadastre os **Locais** (busque o endereço, ajuste o centro no mapa e o raio) e depois os **Colaboradores**, marcando onde cada um pode bater ponto.
+Entre com o admin, em **Empresa** coloque o nome, o CNPJ e a logo (cada empresa cliente tem a sua; ela aparece no painel e no app), cadastre os **Locais** (busque o endereço, ajuste o centro no mapa e o raio) e depois os **Colaboradores**, marcando onde cada um pode bater ponto.
 
 ### 3. App Android
 
