@@ -78,3 +78,36 @@ export interface Empresa {
   cnpj: string | null;
   logo_url: string | null;
 }
+
+export type SituacaoDia = "normal" | "falta" | "folga" | "feriado" | "incompleto" | "em_revisao" | "em_andamento" | "futuro";
+
+export interface DiaEspelho {
+  usuario_id: string;
+  nome: string;
+  data: string;
+  situacao: SituacaoDia;
+  marcacoes: { tipo: TipoBatida; hora: string; origem: "valida" | "pendente_revisao" | "ajuste" }[];
+  previsto_min: number;
+  trabalhado_min: number;
+  intervalo_min: number;
+  noturno_min: number;
+  extra50_min: number;
+  extra100_min: number;
+  falta_min: number;
+  atraso_min: number;
+}
+
+export interface Escala {
+  usuario_id: string;
+  dia_semana: number;
+  entrada: string;
+  saida: string;
+  intervalo_min: number;
+  tolerancia_min: number;
+}
+
+export interface Feriado {
+  id: string;
+  data: string;
+  nome: string;
+}

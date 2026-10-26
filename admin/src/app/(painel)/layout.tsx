@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Bell, Building2, Clock, LogOut, MapPin, Menu, Radio, Users, X } from "lucide-react";
+import { Bell, Building2, Clock, FileText, LogOut, MapPin, Menu, Radio, Users, X } from "lucide-react";
 import { Sessao, useEmpresa, useUsuario } from "@/components/Sessao";
 import { Avatar } from "@/components/ui";
 import { TrocaTema } from "@/components/Tema";
@@ -13,6 +13,7 @@ import { supabase } from "@/lib/supabase";
 const menu = [
   { href: "/", nome: "Ao vivo", icone: Radio },
   { href: "/batidas", nome: "Batidas", icone: Clock },
+  { href: "/espelho", nome: "Espelho de ponto", icone: FileText },
   { href: "/alertas", nome: "Alertas", icone: Bell },
   { href: "/colaboradores", nome: "Colaboradores", icone: Users },
   { href: "/locais", nome: "Locais", icone: MapPin },
@@ -96,7 +97,7 @@ function Estrutura({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen md:flex">
       {/* Menu lateral (computador) */}
-      <aside className="sempre-escuro border-r sticky top-0 hidden h-screen w-64 shrink-0 flex-col justify-between bg-tinta py-6 md:flex">
+      <aside className="sempre-escuro border-r print:hidden sticky top-0 hidden h-screen w-64 shrink-0 flex-col justify-between bg-tinta py-6 md:flex">
         <div className="space-y-8">
           <div className="px-5">{marca}</div>
           {navegacao}
@@ -105,7 +106,7 @@ function Estrutura({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Barra superior (celular) */}
-      <header className="sempre-escuro sticky top-0 z-[1000] flex items-center justify-between bg-tinta px-4 py-3 md:hidden">
+      <header className="sempre-escuro print:hidden sticky top-0 z-[1000] flex items-center justify-between bg-tinta px-4 py-3 md:hidden">
         {marca}
         <button className="rounded-lg p-2 text-white" onClick={() => setAberto(!aberto)} aria-label="Menu">
           {aberto ? <X size={20} /> : <Menu size={20} />}
@@ -126,7 +127,7 @@ function Estrutura({ children }: { children: React.ReactNode }) {
         )}
       </AnimatePresence>
 
-      <main className="min-w-0 flex-1 px-4 py-6 md:px-10 md:py-10">
+      <main className="min-w-0 flex-1 px-4 py-6 md:px-10 md:py-10 print:p-0">
         <div key={caminho} className="mx-auto max-w-7xl animate-entrar">{children}</div>
       </main>
     </div>

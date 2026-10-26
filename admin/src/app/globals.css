@@ -127,7 +127,7 @@ body {
   animation: var(--animate-entrar);
 }
 .selo {
-  @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium;
+  @apply inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium;
 }
 .esqueleto {
   @apply rounded-lg;
@@ -139,7 +139,7 @@ body {
 }
 
 /* No celular as tabelas viram cartões, sem esconder colunas à direita */
-@media (max-width: 767px) {
+@media screen and (max-width: 767px) {
   .tabela thead { display: none; }
   .tabela, .tabela tbody { display: block; }
   .tabela tbody tr { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; padding: 14px 16px; border-bottom: 1px solid var(--color-linha); }
@@ -153,6 +153,34 @@ body {
   .tabela td.acoes { grid-column: 1 / -1; text-align: left; padding-top: 4px; border-top: 1px dashed var(--color-linha); padding-top: 10px; }
   .tabela td.acoes:empty { display: none; }
   .tabela td.foto { grid-row: span 1; }
+  .tabela tfoot { display: none; }
+}
+
+/* Impressão (espelho de ponto): sempre claro, sem menu, folha A4 */
+@media print {
+  @page { size: A4; margin: 8mm 10mm; }
+  :root, .dark {
+    color-scheme: light;
+    --color-papel: #fff; --color-white: #fff; --color-tinta: #0a0a0a; --color-linha: #d4d4d4; --color-suave: #525252;
+    --color-perigo: #b91c1c; --color-neutral-100: #f0f0f0; --color-neutral-300: #bdbdbd; --color-neutral-400: #8a8a8a;
+    --color-red-50: #fff; 
+  }
+  body { background: #fff; font-size: 10px; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .cartao { border: 0; border-radius: 0; box-shadow: none; }
+  .folha { break-after: page; }
+  .folha:last-child { break-after: auto; }
+  .tabela th { padding: 4px 6px; font-size: 9px; }
+  .tabela td { padding: 2px 6px; border-color: #e5e5e5; line-height: 1.35; }
+  .folha > header { padding: 0 0 8px; }
+  .folha > footer { padding: 6px 0; }
+  .tabela tbody tr { animation: none; break-inside: avoid; }
+  .tabela tfoot td { border-top: 1.5px solid #0a0a0a; padding-top: 6px; }
+  .selo { padding: 0 6px; }
+  .tabela tfoot { display: table-row-group; }
+  .tabela-espelho td { white-space: nowrap; }
+  .marcas { flex-wrap: nowrap; }
+  .marcas > span { padding: 0 3px; font-size: 9px; }
 }
 
 /* Filhos entram em sequência */

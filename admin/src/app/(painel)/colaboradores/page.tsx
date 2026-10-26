@@ -4,7 +4,21 @@ import { useCallback, useEffect, useState } from "react";
 import { useUsuario } from "@/components/Sessao";
 import { Avatar } from "@/components/ui";
 import { gerenciarColaborador, supabase } from "@/lib/supabase";
-import type { Local, Papel, Usuario } from "@/lib/tipos";
+import type { Escala, Local, Papel, Usuario } from "@/lib/tipos";
+
+type DiaJornada = { ativo: boolean; entrada: string; saida: string; intervalo: number };
+const nomesDias = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+// padrão para quem ainda não tem escala: segunda a sexta, 8h às 17h, 1 h de intervalo
+const jornadaPadrao = (): DiaJornada[] =>
+  nomesDias.map((_, i) => ({ ativo: i >= 1 && i <= 5, entrada: "08:00", saida: "17:00", intervalo: 60 }));
+
+function minutosJornada(d: DiaJornada) {
+  const [eh, em] = d.entrada.split(":").map(Number);
+  const [sh, sm] = d.saida.split(":").map(Number);
+  let min = sh * 60 + sm - (eh * 60 + em);
+  if (min <= 0) min += 1440;
+  return Math.max(0, min - d.intervalo);
+}
 
 type Vinculo = { usuario_id: string; local_id: string };
 
@@ -16,6 +30,8 @@ export default function PaginaColaboradores() {
   const [pessoas, setPessoas] = useState<Usuario[]>([]);
   const [locais, setLocais] = useState<Local[]>([]);
   const [vinculos, setVinculos] = useState<Vinculo[]>([]);
+  const [escalas, setEscalas] = useState<Escala[]>([]);
+  const [jornada, setJornada] = useState<DiaJornada[]>(jornadaPadrao());
   const [editando, setEditando] = useState<Usuario | "novo" | null>(null);
   const [form, setForm] = useState(vazio);
   const [locaisForm, setLocaisForm] = useState<string[]>([]);
@@ -24,11 +40,13 @@ export default function PaginaColaboradores() {
   const [mostrarInativos, setMostrarInativos] = useState(false);
 
   const carregar = useCallback(async () => {
-    const [p, l, v] = await Promise.all([
+    const [p, l, v, e] = await Promise.all([
       supabase.from("usuarios").select("*").order("nome"),
       supabase.from("locais").select("*").eq("ativo", true).order("nome"),
       supabase.from("usuario_locais").select("*"),
+      supabase.from("escalas").select("*"),
     ]);
+    setEscalas((e.data as Escala[]) ?? []);
     setPessoas((p.data as Usuario[]) ?? []);
     setLocais((l.data as Local[]) ?? []);
     setVinculos((v.data as Vinculo[]) ?? []);
@@ -42,9 +60,17 @@ export default function PaginaColaboradores() {
     if (u === "novo") {
       setForm(vazio);
       setLocaisForm([]);
+      setJornada(jornadaPadrao());
     } else {
       setForm({ nome: u.nome, email: u.email ?? "", senha: "", cpf: u.cpf ?? "", pis: u.pis ?? "", cargo: u.cargo ?? "", papel: u.papel });
       setLocaisForm(vinculos.filter((v) => v.usuario_id === u.id).map((v) => v.local_id));
+      const dele = escalas.filter((e) => e.usuario_id === u.id);
+      setJornada(dele.length === 0 ? jornadaPadrao() : nomesDias.map((_, i) => {
+        const e = dele.find((x) => x.dia_semana === i);
+        return e
+          ? { ativo: true, entrada: e.entrada.slice(0, 5), saida: e.saida.slice(0, 5), intervalo: e.intervalo_min }
+          : { ativo: false, entrada: "08:00", saida: "17:00", intervalo: 60 };
+      }));
     }
   }
 
@@ -53,9 +79,11 @@ export default function PaginaColaboradores() {
     setSalvando(true);
     setErro(null);
     try {
+      let id: string;
       if (editando === "novo") {
-        await gerenciarColaborador({ acao: "criar", ...form, locais: locaisForm });
+        id = (await gerenciarColaborador({ acao: "criar", ...form, locais: locaisForm })).id;
       } else if (editando) {
+        id = editando.id;
         const { error } = await supabase.from("usuarios")
           .update({ nome: form.nome, cpf: form.cpf || null, pis: form.pis || null, cargo: form.cargo || null, papel: form.papel })
           .eq("id", editando.id);
@@ -66,6 +94,14 @@ export default function PaginaColaboradores() {
         const adicionar = locaisForm.filter((id) => !atuais.includes(id));
         if (remover.length) await supabase.from("usuario_locais").delete().eq("usuario_id", editando.id).in("local_id", remover);
         if (adicionar.length) await supabase.from("usuario_locais").insert(adicionar.map((local_id) => ({ usuario_id: editando.id, local_id })));
+      } else return;
+      // jornada: troca a escala inteira da semana
+      const { error: erroApagar } = await supabase.from("escalas").delete().eq("usuario_id", id);
+      if (erroApagar) throw new Error(erroApagar.message);
+      const dias = jornada.flatMap((d, i) => d.ativo ? [{ usuario_id: id, dia_semana: i, entrada: d.entrada, saida: d.saida, intervalo_min: d.intervalo }] : []);
+      if (dias.length) {
+        const { error: erroEscala } = await supabase.from("escalas").insert(dias);
+        if (erroEscala) throw new Error(erroEscala.message);
       }
       setEditando(null);
       carregar();
@@ -130,6 +166,38 @@ export default function PaginaColaboradores() {
               ))}
               {locais.length === 0 && <span className="text-suave">Cadastre um local primeiro.</span>}
             </div>
+          </fieldset>
+          <fieldset className="text-sm md:col-span-3">
+            <legend className="flex w-full items-center justify-between">
+              <span>Jornada de trabalho</span>
+              <span className="text-xs text-suave">
+                {Math.floor(jornada.filter((d) => d.ativo).reduce((t, d) => t + minutosJornada(d), 0) / 60)} h por semana
+              </span>
+            </legend>
+            <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              {jornada.map((d, i) => {
+                const mudar = (novo: Partial<DiaJornada>) => setJornada(jornada.map((x, j) => (j === i ? { ...x, ...novo } : x)));
+                return (
+                  <div key={i} className={`rounded-xl border p-3 transition ${d.ativo ? "border-tinta" : "border-linha opacity-60"}`}>
+                    <label className="flex items-center gap-2 font-medium">
+                      <input type="checkbox" checked={d.ativo} onChange={(e) => mudar({ ativo: e.target.checked })} />
+                      {nomesDias[i]}
+                      <span className="ml-auto text-xs font-normal text-suave">{d.ativo ? `${(minutosJornada(d) / 60).toFixed(1).replace(".0", "")} h` : "Folga"}</span>
+                    </label>
+                    {d.ativo && (
+                      <div className="mt-2 grid grid-cols-2 gap-1.5">
+                        <input aria-label="Entrada" type="time" className="campo px-2 py-1.5 text-xs" value={d.entrada} onChange={(e) => mudar({ entrada: e.target.value })} />
+                        <input aria-label="Saída" type="time" className="campo px-2 py-1.5 text-xs" value={d.saida} onChange={(e) => mudar({ saida: e.target.value })} />
+                        <select aria-label="Intervalo" className="campo col-span-2 px-2 py-1.5 text-xs" value={d.intervalo} onChange={(e) => mudar({ intervalo: Number(e.target.value) })}>
+                          {[0, 15, 30, 60, 90, 120].map((m) => <option key={m} value={m}>{m ? `Intervalo de ${m} min` : "Sem intervalo"}</option>)}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <p className="mt-2 text-xs text-suave">Entrada, saída e intervalo de cada dia. É a base do cálculo de horas extras e faltas no espelho de ponto.</p>
           </fieldset>
           {erro && <p className="text-sm text-perigo md:col-span-3">{erro}</p>}
           <div className="flex gap-2 md:col-span-3">
