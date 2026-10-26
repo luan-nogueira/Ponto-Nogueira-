@@ -60,7 +60,7 @@ export default function PaginaEmpresa() {
       <h1 className="titulo">Empresa</h1>
       <form onSubmit={salvar} className="cartao grid max-w-3xl gap-6 p-4 md:grid-cols-[200px_1fr]">
         <div className="space-y-2">
-          <div className="flex h-48 w-48 items-center justify-center overflow-hidden rounded-lg border border-dashed border-linha bg-white">
+          <div className="flex h-48 w-48 items-center justify-center overflow-hidden rounded-lg border border-dashed border-linha bg-[#fff]">
             {previa ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={previa} alt="Logo" className="max-h-full max-w-full object-contain" />

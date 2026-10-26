@@ -11,7 +11,7 @@ import { supabase } from "@/lib/supabase";
 import { haQuanto, hora, inicioDoDia, nomeTipo } from "@/lib/formato";
 import type { Batida, Local, SituacaoColaborador } from "@/lib/tipos";
 
-const corSituacao = { trabalhando: "#0a0a0a", intervalo: "#737373", fora_jornada: "#e5e5e5" };
+const corSituacao = { trabalhando: "var(--color-tinta)", intervalo: "#737373", fora_jornada: "#e5e5e5" };
 const nomeSituacao = { trabalhando: "Trabalhando", intervalo: "Em intervalo", fora_jornada: "Fora da jornada" };
 
 export default function AoVivo() {

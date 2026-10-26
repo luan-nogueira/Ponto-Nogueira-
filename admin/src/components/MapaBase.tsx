@@ -36,13 +36,15 @@ interface Props {
   className?: string;
 }
 
+const TINTA = "var(--color-tinta)";
+
 function icone(m: Marcador) {
   const claro = m.cor === "#ffffff" || m.cor === "#e5e5e5";
   return L.divIcon({
     className: "",
     iconSize: [34, 34],
     iconAnchor: [17, 17],
-    html: `<div class="marcador" style="color:${m.cor}">${m.pulsar ? '<span class="marcador-onda"></span>' : ""}<span class="marcador-bola" style="background:${m.cor};color:${claro ? "#0a0a0a" : "#fff"}">${m.texto ?? ""}</span></div>`,
+    html: `<div class="marcador" style="color:${m.cor}">${m.pulsar ? '<span class="marcador-onda"></span>' : ""}<span class="marcador-bola" style="background:${m.cor};color:${m.cor === TINTA ? "var(--color-white)" : claro ? "#0a0a0a" : "#fff"}">${m.texto ?? ""}</span></div>`,
   });
 }
 
@@ -99,7 +101,7 @@ export default function MapaBase({ marcadores = [], cercas = [], centro, zoom = 
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       {cercas.map((c) => (
-        <Circle key={c.id} center={[c.lat, c.lng]} radius={c.raio} pathOptions={{ color: "#0a0a0a", weight: 1.5, dashArray: "4 4", fillColor: "#0a0a0a", fillOpacity: 0.06 }}>
+        <Circle key={c.id} center={[c.lat, c.lng]} radius={c.raio} pathOptions={{ className: "cerca", weight: 1.5, dashArray: "4 4", fillOpacity: 0.06 }}>
           <Tooltip>{c.nome}</Tooltip>
         </Circle>
       ))}

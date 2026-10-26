@@ -1,5 +1,21 @@
 package br.com.ponto.app.ui
 
+import android.content.Context
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -82,13 +98,40 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-// Tema preto e branco. Vermelho só para recusa e erro.
-private val Tinta = Color(0xFF0A0A0A)
-private val Papel = Color(0xFFFAFAFA)
-private val Linha = Color(0xFFE7E7E7)
-private val Suave = Color(0xFF737373)
-private val Perigo = Color(0xFFDC2626)
-private val PerigoClaro = Color(0xFFFEF2F2)
+// Tema preto e branco, claro ou escuro. Vermelho só para recusa e erro.
+private class Paleta(
+    val tinta: Color, val sobreTinta: Color, val papel: Color, val cartao: Color, val linha: Color,
+    val suave: Color, val perigo: Color, val perigoClaro: Color, val desligado: Color,
+)
+
+private val Clara = Paleta(
+    tinta = Color(0xFF0A0A0A), sobreTinta = Color.White, papel = Color(0xFFFAFAFA), cartao = Color.White,
+    linha = Color(0xFFE7E7E7), suave = Color(0xFF737373), perigo = Color(0xFFDC2626), perigoClaro = Color(0xFFFEF2F2),
+    desligado = Color(0xFFEDEDED),
+)
+private val Escura = Paleta(
+    tinta = Color(0xFFF5F5F5), sobreTinta = Color(0xFF0A0A0A), papel = Color(0xFF000000), cartao = Color(0xFF141414),
+    linha = Color(0xFF262626), suave = Color(0xFF8F8F8F), perigo = Color(0xFFF87171), perigoClaro = Color(0xFF2A1010),
+    desligado = Color(0xFF1F1F1F),
+)
+
+private val LocalPaleta = compositionLocalOf { Clara }
+private val Tinta: Color @Composable get() = LocalPaleta.current.tinta
+private val SobreTinta: Color @Composable get() = LocalPaleta.current.sobreTinta
+private val Papel: Color @Composable get() = LocalPaleta.current.papel
+private val Cartao: Color @Composable get() = LocalPaleta.current.cartao
+private val Linha: Color @Composable get() = LocalPaleta.current.linha
+private val Suave: Color @Composable get() = LocalPaleta.current.suave
+private val Perigo: Color @Composable get() = LocalPaleta.current.perigo
+private val PerigoClaro: Color @Composable get() = LocalPaleta.current.perigoClaro
+
+/** Cabeçalhos são pretos nos dois temas. */
+private val Preto = Color(0xFF0A0A0A)
+private val CinzaCabecalho = Color(0xFFA3A3A3)
+
+/** Escolha do usuário: "claro", "escuro" ou "sistema" (segue o celular). */
+private class ControleTema(val modo: String, val trocar: (String) -> Unit)
+private val LocalControleTema = compositionLocalOf { ControleTema("sistema") {} }
 
 private val fuso = ZoneId.of("America/Sao_Paulo")
 private val ptBR = Locale("pt", "BR")
@@ -99,13 +142,103 @@ private val formatoDataHora = DateTimeFormatter.ofPattern("dd/MM/yyyy 'às' HH:m
 
 @Composable
 fun TemaPonto(conteudo: @Composable () -> Unit) {
-    MaterialTheme(
-        colorScheme = lightColorScheme(
-            primary = Tinta, onPrimary = Color.White, secondary = Tinta,
-            background = Papel, surface = Color.White, onSurface = Tinta, error = Perigo,
-        ),
+    val contexto = LocalContext.current
+    val prefs = remember { contexto.getSharedPreferences("aparencia", Context.MODE_PRIVATE) }
+    var modo by remember { mutableStateOf(prefs.getString("tema", "sistema") ?: "sistema") }
+    val escuro = when (modo) {
+        "escuro" -> true
+        "claro" -> false
+        else -> isSystemInDarkTheme()
+    }
+
+    // As cores fazem uma transição suave ao trocar o tema
+    val alvo = if (escuro) Escura else Clara
+    @Composable fun anima(c: Color) = animateColorAsState(c, tween(450), label = "cor").value
+    val paleta = Paleta(
+        tinta = anima(alvo.tinta), sobreTinta = anima(alvo.sobreTinta), papel = anima(alvo.papel),
+        cartao = anima(alvo.cartao), linha = anima(alvo.linha), suave = anima(alvo.suave),
+        perigo = anima(alvo.perigo), perigoClaro = anima(alvo.perigoClaro), desligado = anima(alvo.desligado),
+    )
+    val controle = ControleTema(modo) { novo ->
+        modo = novo
+        prefs.edit().putString("tema", novo).apply()
+    }
+
+    CompositionLocalProvider(LocalPaleta provides paleta, LocalControleTema provides controle) {
+        val base = if (escuro) darkColorScheme() else lightColorScheme()
+        MaterialTheme(
+            colorScheme = base.copy(
+                primary = paleta.tinta, onPrimary = paleta.sobreTinta, secondary = paleta.tinta,
+                background = paleta.papel, onBackground = paleta.tinta, surface = paleta.cartao,
+                onSurface = paleta.tinta, onSurfaceVariant = paleta.suave, error = paleta.perigo,
+            ),
+        ) {
+            Box(Modifier.fillMaxSize().background(paleta.papel)) { conteudo() }
+        }
+    }
+}
+
+/** Botão redondo do cabeçalho: alterna claro → escuro → automático. */
+@Composable
+private fun BotaoTema() {
+    val controle = LocalControleTema.current
+    val proximo = when (controle.modo) {
+        "claro" -> "escuro"
+        "escuro" -> "sistema"
+        else -> "claro"
+    }
+    val nome = when (controle.modo) {
+        "claro" -> "Tema claro"
+        "escuro" -> "Tema escuro"
+        else -> "Tema automático"
+    }
+    Box(
+        Modifier.size(40.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.08f))
+            .clickable { controle.trocar(proximo) }
+            .semantics { contentDescription = nome },
+        contentAlignment = Alignment.Center,
     ) {
-        Box(Modifier.fillMaxSize().background(Papel)) { conteudo() }
+        AnimatedContent(
+            controle.modo,
+            transitionSpec = {
+                (fadeIn(tween(250)) + scaleIn(spring(Spring.DampingRatioMediumBouncy), initialScale = 0.4f))
+                    .togetherWith(fadeOut(tween(150)))
+            },
+            label = "tema",
+        ) { m ->
+            IconeTema(m, Modifier.size(18.dp))
+        }
+    }
+}
+
+/** Sol, lua ou meio círculo (automático), desenhados à mão para não depender de pacote de ícones. */
+@Composable
+private fun IconeTema(modo: String, modifier: Modifier = Modifier) {
+    val cor = Color.White
+    Canvas(modifier.graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }) {
+        val r = size.minDimension / 2
+        val c = center
+        when (modo) {
+            "claro" -> {
+                drawCircle(cor, r * 0.42f, c)
+                for (i in 0 until 8) {
+                    val a = Math.toRadians(i * 45.0)
+                    val dx = kotlin.math.cos(a).toFloat()
+                    val dy = kotlin.math.sin(a).toFloat()
+                    drawLine(cor, Offset(c.x + dx * r * 0.66f, c.y + dy * r * 0.66f), Offset(c.x + dx * r * 0.95f, c.y + dy * r * 0.95f),
+                        strokeWidth = r * 0.14f, cap = StrokeCap.Round)
+                }
+            }
+            "escuro" -> {
+                drawCircle(cor, r * 0.8f, c)
+                drawCircle(Color.Black, r * 0.62f, Offset(c.x + r * 0.42f, c.y - r * 0.32f), blendMode = BlendMode.Clear)
+            }
+            else -> {
+                drawCircle(cor, r * 0.78f, c, style = Stroke(r * 0.14f))
+                drawArc(cor, 90f, 180f, useCenter = true, topLeft = Offset(c.x - r * 0.78f, c.y - r * 0.78f),
+                    size = Size(r * 1.56f, r * 1.56f))
+            }
+        }
     }
 }
 
@@ -126,15 +259,15 @@ private fun BotaoPonto(
     val escala by animateFloatAsState(if (pressionado) 0.96f else 1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy), label = "escala")
     val fundo by animateColorAsState(
         when {
-            !habilitado -> Color(0xFFEDEDED)
+            !habilitado -> LocalPaleta.current.desligado
             escuro -> Tinta
-            else -> Color.White
+            else -> Cartao
         },
         label = "fundo",
     )
     val corTexto = when {
         !habilitado -> Color(0xFFA3A3A3)
-        escuro -> Color.White
+        escuro -> SobreTinta
         else -> Tinta
     }
     Box(
@@ -187,16 +320,17 @@ fun TelaLogin(erroInicial: String?, aoEntrar: (String, String, (String?) -> Unit
         focusedBorderColor = Tinta, unfocusedBorderColor = Linha, focusedLabelColor = Tinta, cursorColor = Tinta,
     )
 
-    Column(Modifier.fillMaxSize().background(Color.White)) {
+    Column(Modifier.fillMaxSize().background(Cartao)) {
         // faixa preta com relógio
         Column(
-            Modifier.fillMaxWidth().clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)).background(Tinta)
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)).background(Preto)
                 .statusBarsPadding().padding(28.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(8.dp).background(Color.White, CircleShape))
                 Spacer(Modifier.width(8.dp))
-                Text("Ponto", color = Color(0xFFA3A3A3), fontSize = 14.sp)
+                Text("Ponto", color = CinzaCabecalho, fontSize = 14.sp, modifier = Modifier.weight(1f))
+                BotaoTema()
             }
             Spacer(Modifier.height(48.dp))
             Relogio(Color.White, 64)
@@ -354,7 +488,7 @@ fun TelaPrincipal(
     estado.salvaOffline?.let { tipo ->
         AlertDialog(
             onDismissRequest = aoFecharAviso,
-            containerColor = Color.White,
+            containerColor = Cartao,
             confirmButton = { TextButton(onClick = aoFecharAviso) { Text("OK", color = Tinta) } },
             title = { Text("Sem internet") },
             text = { Text("Sua ${tipo.rotulo.lowercase()} foi guardada no celular e será enviada quando a conexão voltar. O gestor vai conferir o horário.") },
@@ -363,7 +497,7 @@ fun TelaPrincipal(
     estado.erro?.let { e ->
         AlertDialog(
             onDismissRequest = aoFecharAviso,
-            containerColor = Color.White,
+            containerColor = Cartao,
             confirmButton = { TextButton(onClick = aoFecharAviso) { Text("OK", color = Tinta) } },
             title = { Text("Não foi possível registrar") },
             text = { Text(e) },
@@ -372,7 +506,7 @@ fun TelaPrincipal(
     if (confirmarSaida) {
         AlertDialog(
             onDismissRequest = { confirmarSaida = false },
-            containerColor = Color.White,
+            containerColor = Cartao,
             confirmButton = { TextButton(onClick = { confirmarSaida = false; aoSair() }) { Text("Sair da conta", color = Perigo) } },
             dismissButton = { TextButton(onClick = { confirmarSaida = false }) { Text("Cancelar", color = Tinta) } },
             title = { Text("Sair da conta?") },
@@ -385,7 +519,7 @@ fun TelaPrincipal(
 private fun Cabecalho(estado: EstadoPonto, aoSair: () -> Unit) {
     val agora = remember { Instant.now() }
     Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)).background(Tinta)
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)).background(Preto)
             .statusBarsPadding().padding(start = 20.dp, end = 12.dp, top = 12.dp, bottom = 28.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -395,7 +529,8 @@ private fun Cabecalho(estado: EstadoPonto, aoSair: () -> Unit) {
                 Text(estado.empresa.ifBlank { "Ponto" }, color = Color.White, fontWeight = FontWeight.SemiBold, maxLines = 1)
                 Text("Olá, ${estado.nome.substringBefore(' ')}", color = Color(0xFFA3A3A3), fontSize = 13.sp)
             }
-            TextButton(onClick = aoSair) { Text("Sair", color = Color(0xFFA3A3A3)) }
+            BotaoTema()
+            TextButton(onClick = aoSair) { Text("Sair", color = CinzaCabecalho) }
         }
         Spacer(Modifier.height(28.dp))
         Text(formatoData.format(agora).replaceFirstChar { it.uppercase() }, color = Color(0xFFA3A3A3), fontSize = 14.sp)
@@ -411,7 +546,7 @@ private fun LogoEmpresa(url: String?, nome: String) {
         if (url != null) {
             AsyncImage(model = url, contentDescription = nome, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize().padding(4.dp))
         } else {
-            Text(nome.take(2).uppercase().ifBlank { "PT" }, fontWeight = FontWeight.Bold, color = Tinta)
+            Text(nome.take(2).uppercase().ifBlank { "PT" }, fontWeight = FontWeight.Bold, color = Preto)
         }
     }
 }
@@ -425,7 +560,7 @@ private fun CartaoCerca(estado: EstadoPonto, aoAtualizar: () -> Unit) {
         cerca.dentro -> 1
         else -> 2
     }
-    val fundo by animateColorAsState(if (situacao >= 2) PerigoClaro else Color.White, tween(500), label = "fundo")
+    val fundo by animateColorAsState(if (situacao >= 2) PerigoClaro else Cartao, tween(500), label = "fundo")
     val cor = when (situacao) {
         1 -> Tinta
         0 -> Suave
@@ -511,7 +646,7 @@ private fun DialogoComprovante(c: Comprovante, aoFechar: () -> Unit) {
     LaunchedEffect(Unit) { mostrar = true }
     Dialog(onDismissRequest = aoFechar) {
         Column(
-            Modifier.fillMaxWidth().clip(RoundedCornerShape(28.dp)).background(Color.White).padding(24.dp),
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(28.dp)).background(Cartao).padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             AnimatedVisibility(mostrar, enter = scaleIn(spring(dampingRatio = 0.45f, stiffness = 300f)) + fadeIn()) {
@@ -519,7 +654,7 @@ private fun DialogoComprovante(c: Comprovante, aoFechar: () -> Unit) {
                     Modifier.size(76.dp).background(if (ok) Tinta else PerigoClaro, CircleShape),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text(if (ok) "✓" else "✕", color = if (ok) Color.White else Perigo, fontSize = 36.sp, fontWeight = FontWeight.Bold)
+                    Text(if (ok) "✓" else "✕", color = if (ok) SobreTinta else Perigo, fontSize = 36.sp, fontWeight = FontWeight.Bold)
                 }
             }
             Spacer(Modifier.height(16.dp))
@@ -559,7 +694,7 @@ private fun LinhaComprovante(rotulo: String, valor: String) {
 private fun Aviso(texto: String, botao: String? = null, aoClicar: () -> Unit = {}) {
     Column(
         Modifier.padding(horizontal = 20.dp).fillMaxWidth().clip(RoundedCornerShape(20.dp))
-            .border(1.dp, Tinta, RoundedCornerShape(20.dp)).background(Color.White).padding(16.dp),
+            .border(1.dp, Tinta, RoundedCornerShape(20.dp)).background(Cartao).padding(16.dp),
     ) {
         Text(texto, color = Tinta)
         botao?.let { BotaoPonto(it, aoClicar, Modifier.padding(top = 12.dp).height(44.dp)) }

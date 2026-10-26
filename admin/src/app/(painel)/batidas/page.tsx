@@ -126,7 +126,7 @@ export default function PaginaBatidas() {
                       <div className="grid gap-4 md:grid-cols-[1fr_240px]">
                         <Mapa
                           className="h-72 w-full rounded-lg"
-                          marcadores={[{ id: b.id, lat: b.lat, lng: b.lng, cor: b.dentro_cerca ? "#0a0a0a" : "#dc2626", rotulo: "Onde bateu", pulsar: true }]}
+                          marcadores={[{ id: b.id, lat: b.lat, lng: b.lng, cor: b.dentro_cerca ? "var(--color-tinta)" : "#dc2626", rotulo: "Onde bateu", pulsar: true }]}
                           cercas={local ? [{ id: local.id, lat: local.lat, lng: local.lng, raio: local.raio_metros, nome: local.nome }] : []}
                         />
                         <div className="space-y-2 text-sm">

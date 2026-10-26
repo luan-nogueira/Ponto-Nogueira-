@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { TrocaTema } from "@/components/Tema";
 
 function Relogio() {
   const [agora, setAgora] = useState<Date | null>(null);
@@ -83,7 +84,7 @@ function FormLogin() {
 export default function PaginaLogin() {
   return (
     <div className="grid min-h-screen md:grid-cols-[1.1fr_1fr]">
-      <section className="relative hidden overflow-hidden bg-tinta p-12 md:flex md:flex-col md:justify-between">
+      <section className="sempre-escuro relative hidden overflow-hidden bg-tinta p-12 md:flex md:flex-col md:justify-between">
         {/* grade sutil ao fundo */}
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.07]"
@@ -114,7 +115,8 @@ export default function PaginaLogin() {
         </motion.div>
         <div className="relative text-xs text-neutral-600">Controle de ponto com cerca virtual</div>
       </section>
-      <section className="flex items-center justify-center bg-white p-6">
+      <section className="relative flex items-center justify-center bg-white p-6">
+        <TrocaTema className="absolute right-5 top-5" />
         <Suspense>
           <FormLogin />
         </Suspense>

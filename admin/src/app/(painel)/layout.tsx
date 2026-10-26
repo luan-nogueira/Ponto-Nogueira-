@@ -7,6 +7,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { Bell, Building2, Clock, LogOut, MapPin, Menu, Radio, Users, X } from "lucide-react";
 import { Sessao, useEmpresa, useUsuario } from "@/components/Sessao";
 import { Avatar } from "@/components/ui";
+import { TrocaTema } from "@/components/Tema";
 import { supabase } from "@/lib/supabase";
 
 const menu = [
@@ -73,7 +74,12 @@ function Estrutura({ children }: { children: React.ReactNode }) {
     </Link>
   );
 
-  const rodape = (
+  const rodape = (id: string) => (
+    <div className="space-y-3">
+    <div className="flex items-center justify-between px-5">
+      <span className="text-[11px] uppercase tracking-[0.14em] text-neutral-500">Tema</span>
+      <TrocaTema id={`tema-${id}`} escuro />
+    </div>
     <div className="mx-3 flex items-center gap-3 rounded-xl border border-white/10 p-3">
       <Avatar nome={usuario.nome} escuro={false} tamanho="h-8 w-8" />
       <div className="min-w-0 flex-1">
@@ -84,21 +90,22 @@ function Estrutura({ children }: { children: React.ReactNode }) {
         <LogOut size={16} />
       </button>
     </div>
+    </div>
   );
 
   return (
     <div className="min-h-screen md:flex">
       {/* Menu lateral (computador) */}
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col justify-between bg-tinta py-6 md:flex">
+      <aside className="sempre-escuro border-r sticky top-0 hidden h-screen w-64 shrink-0 flex-col justify-between bg-tinta py-6 md:flex">
         <div className="space-y-8">
           <div className="px-5">{marca}</div>
           {navegacao}
         </div>
-        {rodape}
+        {rodape("lado")}
       </aside>
 
       {/* Barra superior (celular) */}
-      <header className="sticky top-0 z-[1000] flex items-center justify-between bg-tinta px-4 py-3 md:hidden">
+      <header className="sempre-escuro sticky top-0 z-[1000] flex items-center justify-between bg-tinta px-4 py-3 md:hidden">
         {marca}
         <button className="rounded-lg p-2 text-white" onClick={() => setAberto(!aberto)} aria-label="Menu">
           {aberto ? <X size={20} /> : <Menu size={20} />}
@@ -111,10 +118,10 @@ function Estrutura({ children }: { children: React.ReactNode }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-x-0 top-[68px] z-[1000] space-y-4 bg-tinta pb-5 pt-2 shadow-2xl md:hidden"
+            className="sempre-escuro fixed inset-x-0 top-[68px] z-[1000] space-y-4 bg-tinta pb-5 pt-2 shadow-2xl md:hidden"
           >
             {navegacao}
-            {rodape}
+            {rodape("celular")}
           </motion.div>
         )}
       </AnimatePresence>
