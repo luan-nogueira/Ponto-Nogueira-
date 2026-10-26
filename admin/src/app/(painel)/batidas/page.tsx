@@ -109,16 +109,16 @@ export default function PaginaBatidas() {
               const local = locais.find((l) => l.id === b.local_id);
               return [
                 <tr key={b.id} className="cursor-pointer hover:bg-neutral-50" onClick={() => setAberta(aberta === b.id ? null : b.id)}>
-                  <td><FotoBatida caminho={b.foto_path} tamanho={40} /></td>
-                  <td className="whitespace-nowrap">{dataHora(b.registrado_em)}{b.sincronizada_offline && <div className="text-xs text-suave">feita sem internet</div>}</td>
-                  <td>{b.usuarios?.nome}</td>
-                  <td>{nomeTipo[b.tipo]}</td>
-                  <td>{b.locais?.nome ?? "—"}{b.distancia_m != null && <div className="text-xs text-suave">{Math.round(b.distancia_m)} m do local</div>}</td>
-                  <td>
+                  <td className="foto"><FotoBatida caminho={b.foto_path} tamanho={40} /></td>
+                  <td data-rotulo="Data e hora" className="whitespace-nowrap">{dataHora(b.registrado_em)}{b.sincronizada_offline && <div className="text-xs text-suave">feita sem internet</div>}</td>
+                  <td data-rotulo="Colaborador">{b.usuarios?.nome}</td>
+                  <td data-rotulo="Tipo">{nomeTipo[b.tipo]}</td>
+                  <td data-rotulo="Local">{b.locais?.nome ?? "—"}{b.distancia_m != null && <div className="text-xs text-suave">{Math.round(b.distancia_m)} m do local</div>}</td>
+                  <td data-rotulo="Situação">
                     <SeloStatus status={b.status} />
                     {b.motivo_rejeicao && <div className="mt-1 max-w-64 text-xs text-suave">{b.motivo_rejeicao}</div>}
                   </td>
-                  <td className="text-suave">{b.nsr ?? "—"}</td>
+                  <td data-rotulo="NSR" className="text-suave">{b.nsr ?? "—"}</td>
                 </tr>,
                 aberta === b.id && (
                   <tr key={`${b.id}-mapa`}>

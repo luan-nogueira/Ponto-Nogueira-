@@ -138,6 +138,23 @@ body {
 
 }
 
+/* No celular as tabelas viram cartões, sem esconder colunas à direita */
+@media (max-width: 767px) {
+  .tabela thead { display: none; }
+  .tabela, .tabela tbody { display: block; }
+  .tabela tbody tr { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; padding: 14px 16px; border-bottom: 1px solid var(--color-linha); }
+  .tabela tbody tr:last-child { border-bottom: 0; }
+  .tabela td { border: 0; padding: 0; min-width: 0; max-width: none; white-space: normal; overflow-wrap: anywhere; }
+  .tabela td[data-rotulo]::before {
+    content: attr(data-rotulo); display: block; margin-bottom: 2px;
+    font-size: 10px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-suave);
+  }
+  .tabela td.cheio, .tabela td[colspan] { grid-column: 1 / -1; }
+  .tabela td.acoes { grid-column: 1 / -1; text-align: left; padding-top: 4px; border-top: 1px dashed var(--color-linha); padding-top: 10px; }
+  .tabela td.acoes:empty { display: none; }
+  .tabela td.foto { grid-row: span 1; }
+}
+
 /* Filhos entram em sequência */
 .escalonado > * { animation: var(--animate-entrar); }
 .escalonado > *:nth-child(1) { animation-delay: 0ms; }

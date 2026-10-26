@@ -124,10 +124,10 @@ export default function PaginaLocais() {
           <tbody>
             {locais.map((l) => (
               <tr key={l.id} className={l.ativo ? "" : "text-neutral-400"}>
-                <td>{l.nome}{!l.ativo && " (inativo)"}</td>
-                <td className="max-w-md">{l.endereco ?? "—"}</td>
-                <td>{l.raio_metros} m</td>
-                <td className="whitespace-nowrap text-right">
+                <td className="cheio font-medium md:font-normal">{l.nome}{!l.ativo && " (inativo)"}</td>
+                <td data-rotulo="Endereço" className="cheio max-w-md">{l.endereco ?? "—"}</td>
+                <td data-rotulo="Raio">{l.raio_metros} m</td>
+                <td className="acoes whitespace-nowrap text-right">
                   <button className="font-medium text-tinta underline-offset-4 hover:underline" onClick={() => abrir(l)}>Editar</button>
                   <button className="ml-3 text-suave underline-offset-4 hover:text-tinta hover:underline" onClick={() => alternarAtivo(l)}>{l.ativo ? "Desativar" : "Reativar"}</button>
                 </td>

@@ -40,10 +40,10 @@ export default function PaginaAlertas() {
           <tbody>
             {alertas.map((a) => (
               <tr key={a.id} className={a.lido ? "text-neutral-400" : ""}>
-                <td className="whitespace-nowrap">{dataHora(a.criado_em)}</td>
-                <td>{a.usuarios?.nome ?? "—"}</td>
-                <td>{nomeAlerta[a.tipo]}</td>
-                <td className="max-w-md text-xs">
+                <td data-rotulo="Quando" className="whitespace-nowrap">{dataHora(a.criado_em)}</td>
+                <td data-rotulo="Colaborador">{a.usuarios?.nome ?? "—"}</td>
+                <td data-rotulo="Alerta" className="cheio font-medium md:font-normal">{nomeAlerta[a.tipo]}</td>
+                <td className="cheio max-w-md text-xs">
                   {String(a.detalhes.motivo ?? "")}
                   {typeof a.detalhes.lat === "number" && (
                     <a className="ml-2 font-medium text-tinta underline-offset-4 hover:underline" target="_blank" rel="noreferrer"
@@ -52,7 +52,7 @@ export default function PaginaAlertas() {
                     </a>
                   )}
                 </td>
-                <td className="text-right">{!a.lido && <button className="font-medium text-tinta underline-offset-4 hover:underline" onClick={() => marcarLidos([a.id])}>Lido</button>}</td>
+                <td className="acoes text-right">{!a.lido && <button className="font-medium text-tinta underline-offset-4 hover:underline" onClick={() => marcarLidos([a.id])}>Lido</button>}</td>
               </tr>
             ))}
             {alertas.length === 0 && <tr><td colSpan={5} className="text-suave">Nenhum alerta.</td></tr>}

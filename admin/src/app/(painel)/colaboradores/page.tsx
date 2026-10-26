@@ -145,17 +145,17 @@ export default function PaginaColaboradores() {
           <tbody>
             {lista.map((u) => (
               <tr key={u.id} className={u.ativo ? "" : "text-neutral-400 opacity-70"}>
-                <td>
+                <td className="cheio">
                   <span className="flex items-center gap-3">
                     <Avatar nome={u.nome} escuro={u.ativo} tamanho="h-8 w-8" />
                     <span className="font-medium">{u.nome}{!u.ativo && <span className="ml-1 font-normal text-suave">(inativo)</span>}</span>
                   </span>
                 </td>
-                <td>{u.email}</td>
-                <td>{u.cargo ?? "—"}</td>
-                <td><span className={`selo capitalize ${u.papel === "colaborador" ? "bg-neutral-100" : "bg-tinta text-white"}`}>{u.papel}</span></td>
-                <td>{vinculos.filter((v) => v.usuario_id === u.id).map((v) => locais.find((l) => l.id === v.local_id)?.nome).filter(Boolean).join(", ") || "—"}</td>
-                <td className="whitespace-nowrap text-right">
+                <td data-rotulo="E-mail" className="cheio">{u.email}</td>
+                <td data-rotulo="Cargo">{u.cargo ?? "—"}</td>
+                <td data-rotulo="Perfil"><span className={`selo capitalize ${u.papel === "colaborador" ? "bg-neutral-100" : "bg-tinta text-white"}`}>{u.papel}</span></td>
+                <td data-rotulo="Locais" className="cheio">{vinculos.filter((v) => v.usuario_id === u.id).map((v) => locais.find((l) => l.id === v.local_id)?.nome).filter(Boolean).join(", ") || "—"}</td>
+                <td className="acoes whitespace-nowrap text-right">
                   {souAdmin && (
                     <>
                       <button className="font-medium text-tinta underline-offset-4 hover:underline" onClick={() => abrir(u)}>Editar</button>
