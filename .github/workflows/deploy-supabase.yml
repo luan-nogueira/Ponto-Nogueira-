@@ -1,0 +1,36 @@
+name: Publicar no Supabase
+
+# Instala/atualiza o banco e a função de contas no projeto Supabase.
+# Roda sozinho quando algo em supabase/ muda na main, ou manualmente na aba Actions.
+# Secrets necessários (Settings > Secrets and variables > Actions):
+#   SUPABASE_URL           https://<ref>.supabase.co
+#   SUPABASE_ACCESS_TOKEN  token pessoal (supabase.com/dashboard/account/tokens)
+#   SUPABASE_DB_PASSWORD   senha do banco escolhida ao criar o projeto
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["supabase/**"]
+
+concurrency: deploy-supabase
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Ligar ao projeto
+        run: |
+          REF=$(echo "${{ secrets.SUPABASE_URL }}" | sed -E 's#https://([^.]+)\.supabase\.co.*#\1#')
+          supabase link --project-ref "$REF"
+      - name: Atualizar o banco
+        run: supabase db push --include-all
+      - name: Publicar a função de contas
+        run: supabase functions deploy colaboradores
