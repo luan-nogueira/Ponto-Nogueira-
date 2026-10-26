@@ -11,11 +11,11 @@ import { TrocaTema } from "@/components/Tema";
 import { supabase } from "@/lib/supabase";
 
 const menu = [
-  { href: "/", nome: "Ao vivo", icone: Radio },
-  { href: "/batidas", nome: "Batidas", icone: Clock },
-  { href: "/espelho", nome: "Espelho de ponto", icone: FileText },
+  { href: "/", nome: "Ao vivo", curto: "Ao vivo", icone: Radio },
+  { href: "/batidas", nome: "Batidas", curto: "Batidas", icone: Clock },
+  { href: "/espelho", nome: "Espelho de ponto", curto: "Espelho", icone: FileText },
   { href: "/alertas", nome: "Alertas", icone: Bell },
-  { href: "/colaboradores", nome: "Colaboradores", icone: Users },
+  { href: "/colaboradores", nome: "Colaboradores", curto: "Equipe", icone: Users },
   { href: "/locais", nome: "Locais", icone: MapPin },
   { href: "/empresa", nome: "Empresa", icone: Building2, soAdmin: true },
 ];
@@ -27,6 +27,7 @@ function Estrutura({ children }: { children: React.ReactNode }) {
   const [aberto, setAberto] = useState(false);
 
   const itens = menu.filter((item) => !item.soAdmin || usuario.papel === "admin");
+  const abas = itens.filter((item) => item.curto);
 
   const navegacao = (
     <nav className="flex flex-col gap-1 px-3">
@@ -106,20 +107,28 @@ function Estrutura({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Barra superior (celular) */}
-      <header className="sempre-escuro print:hidden sticky top-0 z-[1000] flex items-center justify-between bg-tinta px-4 py-3 md:hidden">
+      <header className="sempre-escuro print:hidden sticky top-0 z-[1000] flex items-center justify-between bg-tinta px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] md:hidden">
         {marca}
-        <button className="rounded-lg p-2 text-white" onClick={() => setAberto(!aberto)} aria-label="Menu">
-          {aberto ? <X size={20} /> : <Menu size={20} />}
-        </button>
       </header>
       <AnimatePresence>
         {aberto && (
           <motion.div
-            initial={{ opacity: 0, y: -12 }}
+            key="fundo"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[999] bg-black/40 backdrop-blur-[2px] md:hidden"
+            onClick={() => setAberto(false)}
+          />
+        )}
+        {aberto && (
+          <motion.div
+            key="menu"
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
+            exit={{ opacity: 0, y: 16 }}
             transition={{ duration: 0.2 }}
-            className="sempre-escuro fixed inset-x-0 top-[68px] z-[1000] space-y-4 bg-tinta pb-5 pt-2 shadow-2xl md:hidden"
+            className="sempre-escuro fixed inset-x-3 bottom-[calc(max(0.75rem,env(safe-area-inset-bottom))+76px)] z-[1000] space-y-4 rounded-2xl bg-tinta py-4 shadow-2xl md:hidden"
           >
             {navegacao}
             {rodape("celular")}
@@ -127,9 +136,30 @@ function Estrutura({ children }: { children: React.ReactNode }) {
         )}
       </AnimatePresence>
 
-      <main className="min-w-0 flex-1 px-4 py-6 md:px-10 md:py-10 print:p-0">
+      <main className="min-w-0 flex-1 px-4 pb-28 pt-6 md:px-10 md:py-10 print:p-0">
         <div key={caminho} className="mx-auto max-w-7xl animate-entrar">{children}</div>
       </main>
+
+      {/* Barra de abas (celular): os atalhos mais usados ficam ao alcance do polegar */}
+      <nav className="sempre-escuro fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-[1000] flex items-center justify-around rounded-2xl bg-tinta/95 p-1.5 shadow-2xl backdrop-blur md:hidden print:hidden">
+        {abas.map((item) => {
+          const ativo = item.href === "/" ? caminho === "/" : caminho.startsWith(item.href);
+          const Icone = item.icone;
+          return (
+            <Link key={item.href} href={item.href} onClick={() => setAberto(false)}
+              className={`relative flex flex-1 flex-col items-center gap-0.5 rounded-xl py-2 text-[10px] transition-colors ${ativo ? "text-tinta" : "text-neutral-400"}`}>
+              {ativo && <motion.span layoutId="aba-ativa" className="absolute inset-0 rounded-xl bg-white" transition={{ type: "spring", stiffness: 420, damping: 34 }} />}
+              <Icone size={19} strokeWidth={ativo ? 2.2 : 1.8} className="relative" />
+              <span className="relative font-medium">{item.curto}</span>
+            </Link>
+          );
+        })}
+        <button onClick={() => setAberto(!aberto)}
+          className={`relative flex flex-1 flex-col items-center gap-0.5 rounded-xl py-2 text-[10px] ${aberto ? "text-white" : "text-neutral-400"}`}>
+          {aberto ? <X size={19} /> : <Menu size={19} />}
+          <span className="font-medium">Mais</span>
+        </button>
+      </nav>
     </div>
   );
 }

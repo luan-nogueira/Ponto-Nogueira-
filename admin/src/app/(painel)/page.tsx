@@ -138,7 +138,7 @@ export default function AoVivo() {
       <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
         <div className="cartao relative overflow-hidden p-1.5 animate-entrar [animation-delay:200ms]">
           <Mapa
-            className="h-[520px] w-full rounded-xl"
+            className="h-[380px] w-full rounded-xl md:h-[520px]"
             marcadores={marcadores}
             cercas={locais.map((l) => ({ id: l.id, lat: l.lat, lng: l.lng, raio: l.raio_metros, nome: l.nome }))}
             centro={foco}

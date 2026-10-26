@@ -7,17 +7,17 @@ import { ArrowRight, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { TrocaTema } from "@/components/Tema";
 
-function Relogio() {
+function Relogio({ pequeno = false }: { pequeno?: boolean }) {
   const [agora, setAgora] = useState<Date | null>(null);
   useEffect(() => {
     setAgora(new Date());
     const t = setInterval(() => setAgora(new Date()), 1000);
     return () => clearInterval(t);
   }, []);
-  if (!agora) return <div className="h-24" />;
+  if (!agora) return <div className={pequeno ? "h-16" : "h-24"} />;
   const hora = agora.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo" });
   return (
-    <div className="text-7xl font-light tabular-nums tracking-tighter text-white md:text-8xl">
+    <div className={`font-light tabular-nums tracking-tighter text-white ${pequeno ? "text-6xl" : "text-7xl md:text-8xl"}`}>
       {hora.slice(0, 5)}
       <span className="text-neutral-600">{hora.slice(5)}</span>
     </div>
@@ -83,7 +83,7 @@ function FormLogin() {
 
 export default function PaginaLogin() {
   return (
-    <div className="grid min-h-screen md:grid-cols-[1.1fr_1fr]">
+    <div className="grid min-h-dvh md:grid-cols-[1.1fr_1fr]">
       <section className="sempre-escuro relative hidden overflow-hidden bg-tinta p-12 md:flex md:flex-col md:justify-between">
         {/* grade sutil ao fundo */}
         <div
@@ -115,11 +115,32 @@ export default function PaginaLogin() {
         </motion.div>
         <div className="relative text-xs text-neutral-600">Controle de ponto com cerca virtual</div>
       </section>
-      <section className="relative flex items-center justify-center bg-white p-6">
-        <TrocaTema className="absolute right-5 top-5" />
+      <section className="relative flex flex-col bg-white md:items-center md:justify-center md:p-6">
+        {/* celular: faixa preta com o relógio no topo */}
+        <motion.div
+          initial={{ opacity: 0, y: -12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          className="sempre-escuro relative overflow-hidden rounded-b-[2rem] bg-tinta px-6 pb-8 pt-[max(1.25rem,env(safe-area-inset-top))] md:hidden"
+        >
+          <motion.div
+            className="pointer-events-none absolute -right-16 -top-10 h-56 w-56 rounded-full bg-white/10 blur-3xl"
+            animate={{ x: [0, -30, 0], y: [0, 20, 0] }}
+            transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+          />
+          <div className="relative flex items-center justify-between">
+            <span className="flex items-center gap-2 text-sm text-neutral-400"><span className="h-2 w-2 rounded-full bg-white" /> Ponto</span>
+            <TrocaTema id="tema-login-celular" escuro />
+          </div>
+          <div className="relative mt-8"><Relogio pequeno /></div>
+          <p className="relative mt-3 text-sm text-neutral-400">Sua equipe em tempo real. Cada batida com foto, local e hora certa.</p>
+        </motion.div>
+        <TrocaTema className="absolute right-5 top-5 hidden md:inline-flex" />
+        <div className="flex flex-1 justify-center px-6 py-10 md:p-0">
         <Suspense>
           <FormLogin />
         </Suspense>
+        </div>
       </section>
     </div>
   );

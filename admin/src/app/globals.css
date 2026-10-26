@@ -138,6 +138,11 @@ body {
 
 }
 
+/* iPhone/Android dão zoom ao tocar num campo com letra menor que 16px */
+@media screen and (max-width: 767px) {
+  input, select, textarea { font-size: 16px !important; }
+}
+
 /* No celular as tabelas viram cartões, sem esconder colunas à direita */
 @media screen and (max-width: 767px) {
   .tabela thead { display: none; }
