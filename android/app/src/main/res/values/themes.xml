@@ -1,0 +1,5 @@
+<resources>
+    <style name="Theme.Ponto" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">#065F46</item>
+    </style>
+</resources>

@@ -1,0 +1,6 @@
+-keepattributes *Annotation*, InnerClasses
+-keep,includedescriptorclasses class br.com.ponto.app.**$$serializer { *; }
+-keepclassmembers class br.com.ponto.app.** { *** Companion; }
+-keepclasseswithmembers class br.com.ponto.app.** { kotlinx.serialization.KSerializer serializer(...); }
+-dontwarn okhttp3.internal.platform.**
+-dontwarn org.conscrypt.**

@@ -1,0 +1,20 @@
+# Configuração do Supabase CLI (desenvolvimento local e deploy).
+project_id = "ponto"
+
+[api]
+schemas = ["public"]
+
+[db]
+major_version = 15
+
+[db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]
+
+[auth]
+site_url = "http://localhost:3000"
+# Contas são criadas pelo admin no painel; ninguém se cadastra sozinho.
+enable_signup = false
+
+[functions.colaboradores]
+verify_jwt = true
