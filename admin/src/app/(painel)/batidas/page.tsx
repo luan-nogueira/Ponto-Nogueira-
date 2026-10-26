@@ -5,7 +5,8 @@ import Mapa from "@/components/Mapa";
 import { FotoBatida } from "@/components/FotoBatida";
 import { useUsuario } from "@/components/Sessao";
 import { supabase } from "@/lib/supabase";
-import { corStatus, dataHora, inicioDoDia, nomeStatus, nomeTipo } from "@/lib/formato";
+import { dataHora, inicioDoDia, nomeStatus, nomeTipo } from "@/lib/formato";
+import { LinhasEsqueleto, SeloStatus, Vazio } from "@/components/ui";
 import type { Batida, Local, StatusBatida, Usuario } from "@/lib/tipos";
 
 function hojeISO() {
@@ -22,7 +23,7 @@ export default function PaginaBatidas() {
   const [locais, setLocais] = useState<Local[]>([]);
   const [batidas, setBatidas] = useState<Batida[]>([]);
   const [aberta, setAberta] = useState<string | null>(null);
-  const [carregando, setCarregando] = useState(false);
+  const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
     supabase.from("usuarios").select("id, nome").eq("papel", "colaborador").order("nome")
@@ -75,10 +76,10 @@ export default function PaginaBatidas() {
   }
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Batidas</h1>
+    <div className="space-y-6">
+      <h1 className="titulo">Batidas</h1>
 
-      <div className="cartao flex flex-wrap items-end gap-3 p-4">
+      <div className="cartao flex flex-wrap items-end gap-3 p-4 animate-entrar [animation-delay:60ms]">
         <label className="text-sm">De<input type="date" className="campo mt-1" value={de} onChange={(e) => setDe(e.target.value)} /></label>
         <label className="text-sm">Até<input type="date" className="campo mt-1" value={ate} onChange={(e) => setAte(e.target.value)} /></label>
         <label className="text-sm">Colaborador
@@ -98,7 +99,7 @@ export default function PaginaBatidas() {
         <button className="botao-sec" onClick={exportarCSV} disabled={!batidas.length}>Exportar CSV</button>
       </div>
 
-      <div className="cartao overflow-x-auto">
+      <div className="cartao overflow-x-auto animate-entrar [animation-delay:120ms]">
         <table className="tabela">
           <thead>
             <tr><th>Foto</th><th>Data e hora</th><th>Colaborador</th><th>Tipo</th><th>Local</th><th>Situação</th><th>NSR</th></tr>
@@ -107,32 +108,32 @@ export default function PaginaBatidas() {
             {batidas.map((b) => {
               const local = locais.find((l) => l.id === b.local_id);
               return [
-                <tr key={b.id} className="cursor-pointer hover:bg-gray-50" onClick={() => setAberta(aberta === b.id ? null : b.id)}>
+                <tr key={b.id} className="cursor-pointer hover:bg-neutral-50" onClick={() => setAberta(aberta === b.id ? null : b.id)}>
                   <td><FotoBatida caminho={b.foto_path} tamanho={40} /></td>
-                  <td className="whitespace-nowrap">{dataHora(b.registrado_em)}{b.sincronizada_offline && <div className="text-xs text-amber-700">feita sem internet</div>}</td>
+                  <td className="whitespace-nowrap">{dataHora(b.registrado_em)}{b.sincronizada_offline && <div className="text-xs text-suave">feita sem internet</div>}</td>
                   <td>{b.usuarios?.nome}</td>
                   <td>{nomeTipo[b.tipo]}</td>
-                  <td>{b.locais?.nome ?? "—"}{b.distancia_m != null && <div className="text-xs text-gray-500">{Math.round(b.distancia_m)} m do local</div>}</td>
+                  <td>{b.locais?.nome ?? "—"}{b.distancia_m != null && <div className="text-xs text-suave">{Math.round(b.distancia_m)} m do local</div>}</td>
                   <td>
-                    <span className={`rounded px-2 py-0.5 text-xs ${corStatus[b.status]}`}>{nomeStatus[b.status]}</span>
-                    {b.motivo_rejeicao && <div className="mt-1 max-w-64 text-xs text-gray-500">{b.motivo_rejeicao}</div>}
+                    <SeloStatus status={b.status} />
+                    {b.motivo_rejeicao && <div className="mt-1 max-w-64 text-xs text-suave">{b.motivo_rejeicao}</div>}
                   </td>
-                  <td className="text-gray-500">{b.nsr ?? "—"}</td>
+                  <td className="text-suave">{b.nsr ?? "—"}</td>
                 </tr>,
                 aberta === b.id && (
                   <tr key={`${b.id}-mapa`}>
-                    <td colSpan={7} className="bg-gray-50">
+                    <td colSpan={7} className="bg-neutral-50 p-4 animate-entrar">
                       <div className="grid gap-4 md:grid-cols-[1fr_240px]">
                         <Mapa
                           className="h-72 w-full rounded-lg"
-                          marcadores={[{ id: b.id, lat: b.lat, lng: b.lng, cor: b.dentro_cerca ? "#059669" : "#dc2626", rotulo: "Onde bateu" }]}
+                          marcadores={[{ id: b.id, lat: b.lat, lng: b.lng, cor: b.dentro_cerca ? "#0a0a0a" : "#dc2626", rotulo: "Onde bateu", pulsar: true }]}
                           cercas={local ? [{ id: local.id, lat: local.lat, lng: local.lng, raio: local.raio_metros, nome: local.nome }] : []}
                         />
                         <div className="space-y-2 text-sm">
                           <FotoBatida caminho={b.foto_path} tamanho={200} />
                           <div>GPS: {b.lat.toFixed(6)}, {b.lng.toFixed(6)}{b.precisao_m != null && ` (±${Math.round(b.precisao_m)} m)`}</div>
                           {b.hora_dispositivo && <div>Hora no celular: {dataHora(b.hora_dispositivo)}</div>}
-                          {b.mock_location && <div className="text-red-700">GPS falso detectado</div>}
+                          {b.mock_location && <div className="text-perigo">GPS falso detectado</div>}
                           {b.status === "pendente_revisao" && (
                             <div className="flex gap-2 pt-2">
                               <button className="botao" onClick={() => decidir(b, "valida")}>Aceitar</button>
@@ -146,7 +147,8 @@ export default function PaginaBatidas() {
                 ),
               ];
             })}
-            {!carregando && batidas.length === 0 && <tr><td colSpan={7} className="text-gray-500">Nenhuma batida no período.</td></tr>}
+            {carregando && batidas.length === 0 && <LinhasEsqueleto colunas={7} />}
+            {!carregando && batidas.length === 0 && <Vazio colunas={7} texto="Nenhuma batida no período." />}
           </tbody>
         </table>
       </div>

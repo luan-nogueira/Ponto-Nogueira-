@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useUsuario } from "@/components/Sessao";
+import { Avatar } from "@/components/ui";
 import { gerenciarColaborador, supabase } from "@/lib/supabase";
 import type { Local, Papel, Usuario } from "@/lib/tipos";
 
@@ -88,11 +89,11 @@ export default function PaginaColaboradores() {
   const lista = pessoas.filter((p) => mostrarInativos || p.ativo);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-semibold">Colaboradores</h1>
+        <h1 className="titulo">Colaboradores</h1>
         <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 text-sm text-gray-600">
+          <label className="flex items-center gap-2 text-sm text-suave">
             <input type="checkbox" checked={mostrarInativos} onChange={(e) => setMostrarInativos(e.target.checked)} /> Mostrar inativos
           </label>
           {souAdmin && <button className="botao" onClick={() => abrir("novo")}>Novo colaborador</button>}
@@ -100,7 +101,7 @@ export default function PaginaColaboradores() {
       </div>
 
       {editando && (
-        <form onSubmit={salvar} className="cartao grid gap-3 p-4 md:grid-cols-3">
+        <form onSubmit={salvar} className="cartao grid gap-4 p-6 animate-entrar md:grid-cols-3">
           <h2 className="font-medium md:col-span-3">{editando === "novo" ? "Novo colaborador" : `Editar ${editando.nome}`}</h2>
           <label className="text-sm">Nome<input className="campo mt-1" required value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></label>
           <label className="text-sm">E-mail (login)<input className="campo mt-1" type="email" required disabled={editando !== "novo"} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></label>
@@ -127,10 +128,10 @@ export default function PaginaColaboradores() {
                   {l.nome}
                 </label>
               ))}
-              {locais.length === 0 && <span className="text-gray-500">Cadastre um local primeiro.</span>}
+              {locais.length === 0 && <span className="text-suave">Cadastre um local primeiro.</span>}
             </div>
           </fieldset>
-          {erro && <p className="text-sm text-red-700 md:col-span-3">{erro}</p>}
+          {erro && <p className="text-sm text-perigo md:col-span-3">{erro}</p>}
           <div className="flex gap-2 md:col-span-3">
             <button className="botao" disabled={salvando}>{salvando ? "Salvando…" : "Salvar"}</button>
             <button type="button" className="botao-sec" onClick={() => setEditando(null)}>Cancelar</button>
@@ -138,23 +139,28 @@ export default function PaginaColaboradores() {
         </form>
       )}
 
-      <div className="cartao overflow-x-auto">
+      <div className="cartao overflow-x-auto animate-entrar [animation-delay:120ms]">
         <table className="tabela">
           <thead><tr><th>Nome</th><th>E-mail</th><th>Cargo</th><th>Perfil</th><th>Locais</th><th></th></tr></thead>
           <tbody>
             {lista.map((u) => (
-              <tr key={u.id} className={u.ativo ? "" : "text-gray-400"}>
-                <td>{u.nome}{!u.ativo && " (inativo)"}</td>
+              <tr key={u.id} className={u.ativo ? "" : "text-neutral-400 opacity-70"}>
+                <td>
+                  <span className="flex items-center gap-3">
+                    <Avatar nome={u.nome} escuro={u.ativo} tamanho="h-8 w-8" />
+                    <span className="font-medium">{u.nome}{!u.ativo && <span className="ml-1 font-normal text-suave">(inativo)</span>}</span>
+                  </span>
+                </td>
                 <td>{u.email}</td>
                 <td>{u.cargo ?? "—"}</td>
-                <td className="capitalize">{u.papel}</td>
+                <td><span className={`selo capitalize ${u.papel === "colaborador" ? "bg-neutral-100" : "bg-tinta text-white"}`}>{u.papel}</span></td>
                 <td>{vinculos.filter((v) => v.usuario_id === u.id).map((v) => locais.find((l) => l.id === v.local_id)?.nome).filter(Boolean).join(", ") || "—"}</td>
                 <td className="whitespace-nowrap text-right">
                   {souAdmin && (
                     <>
-                      <button className="text-emerald-700 underline" onClick={() => abrir(u)}>Editar</button>
+                      <button className="font-medium text-tinta underline-offset-4 hover:underline" onClick={() => abrir(u)}>Editar</button>
                       {u.id !== eu.id && (
-                        <button className="ml-3 text-gray-600 underline" onClick={() => alternarAtivo(u)}>{u.ativo ? "Desativar" : "Reativar"}</button>
+                        <button className="ml-3 text-suave underline-offset-4 hover:text-tinta hover:underline" onClick={() => alternarAtivo(u)}>{u.ativo ? "Desativar" : "Reativar"}</button>
                       )}
                     </>
                   )}

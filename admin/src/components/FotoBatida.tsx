@@ -10,12 +10,12 @@ export function FotoBatida({ caminho, tamanho = 48 }: { caminho: string | null; 
     if (!caminho) return;
     supabase.storage.from("fotos-ponto").createSignedUrl(caminho, 3600).then(({ data }) => setUrl(data?.signedUrl ?? null));
   }, [caminho]);
-  if (!caminho) return <span className="text-xs text-gray-400">sem foto</span>;
-  if (!url) return <div style={{ width: tamanho, height: tamanho }} className="rounded bg-gray-100" />;
+  if (!caminho) return <span style={{ width: tamanho, height: tamanho }} className="flex items-center justify-center rounded-lg bg-neutral-100 text-[10px] text-suave">sem foto</span>;
+  if (!url) return <div style={{ width: tamanho, height: tamanho }} className="esqueleto" />;
   return (
     <a href={url} target="_blank" rel="noreferrer">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={url} alt="Foto da batida" width={tamanho} height={tamanho} className="rounded object-cover" style={{ width: tamanho, height: tamanho }} />
+      <img src={url} alt="Foto da batida" width={tamanho} height={tamanho} className="rounded-lg object-cover grayscale transition duration-300 hover:grayscale-0 hover:scale-105" style={{ width: tamanho, height: tamanho }} />
     </a>
   );
 }

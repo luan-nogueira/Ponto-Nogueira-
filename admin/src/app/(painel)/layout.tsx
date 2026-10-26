@@ -3,16 +3,19 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { Bell, Building2, Clock, LogOut, MapPin, Menu, Radio, Users, X } from "lucide-react";
 import { Sessao, useEmpresa, useUsuario } from "@/components/Sessao";
+import { Avatar } from "@/components/ui";
 import { supabase } from "@/lib/supabase";
 
 const menu = [
-  { href: "/", nome: "Ao vivo" },
-  { href: "/batidas", nome: "Batidas" },
-  { href: "/alertas", nome: "Alertas" },
-  { href: "/colaboradores", nome: "Colaboradores" },
-  { href: "/locais", nome: "Locais" },
-  { href: "/empresa", nome: "Empresa", soAdmin: true },
+  { href: "/", nome: "Ao vivo", icone: Radio },
+  { href: "/batidas", nome: "Batidas", icone: Clock },
+  { href: "/alertas", nome: "Alertas", icone: Bell },
+  { href: "/colaboradores", nome: "Colaboradores", icone: Users },
+  { href: "/locais", nome: "Locais", icone: MapPin },
+  { href: "/empresa", nome: "Empresa", icone: Building2, soAdmin: true },
 ];
 
 function Estrutura({ children }: { children: React.ReactNode }) {
@@ -21,47 +24,104 @@ function Estrutura({ children }: { children: React.ReactNode }) {
   const { empresa } = useEmpresa();
   const [aberto, setAberto] = useState(false);
 
+  const itens = menu.filter((item) => !item.soAdmin || usuario.papel === "admin");
+
+  const navegacao = (
+    <nav className="flex flex-col gap-1 px-3">
+      {itens.map((item, i) => {
+        const ativo = item.href === "/" ? caminho === "/" : caminho.startsWith(item.href);
+        const Icone = item.icone;
+        return (
+          <motion.div key={item.href} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.04 * i }}>
+            <Link
+              href={item.href}
+              onClick={() => setAberto(false)}
+              className={`relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors duration-200 ${
+                ativo ? "text-tinta" : "text-neutral-400 hover:text-white"
+              }`}
+            >
+              {ativo && (
+                <motion.span
+                  layoutId="menu-ativo"
+                  className="absolute inset-0 rounded-xl bg-white"
+                  transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                />
+              )}
+              <Icone size={17} strokeWidth={ativo ? 2.2 : 1.8} className="relative" />
+              <span className={`relative ${ativo ? "font-medium" : ""}`}>{item.nome}</span>
+            </Link>
+          </motion.div>
+        );
+      })}
+    </nav>
+  );
+
+  const marca = (
+    <Link href="/" className="flex min-w-0 items-center gap-3">
+      {empresa.logo_url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={empresa.logo_url} alt={empresa.nome} className="h-11 w-11 shrink-0 rounded-xl bg-white object-contain p-1" />
+      ) : (
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-sm font-bold text-tinta">
+          {empresa.nome.slice(0, 2).toUpperCase()}
+        </span>
+      )}
+      <span className="min-w-0">
+        <span className="block text-sm font-semibold leading-tight text-white">{empresa.nome}</span>
+        <span className="block text-[11px] uppercase tracking-[0.14em] text-neutral-500">Ponto</span>
+      </span>
+    </Link>
+  );
+
+  const rodape = (
+    <div className="mx-3 flex items-center gap-3 rounded-xl border border-white/10 p-3">
+      <Avatar nome={usuario.nome} escuro={false} tamanho="h-8 w-8" />
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-sm text-white">{usuario.nome}</div>
+        <div className="text-[11px] capitalize text-neutral-500">{usuario.papel}</div>
+      </div>
+      <button title="Sair" className="rounded-lg p-1.5 text-neutral-400 transition hover:bg-white/10 hover:text-white" onClick={() => supabase.auth.signOut()}>
+        <LogOut size={16} />
+      </button>
+    </div>
+  );
+
   return (
-    <div className="flex min-h-screen flex-col md:flex-row">
-      <aside className="border-b border-gray-200 bg-white md:w-56 md:border-b-0 md:border-r">
-        <div className="flex items-center justify-between px-4 py-4">
-          <Link href="/" className="flex min-w-0 items-center gap-3">
-            {empresa.logo_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={empresa.logo_url} alt={empresa.nome} className="h-10 w-10 shrink-0 rounded object-contain md:h-12 md:w-12" />
-            ) : (
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-emerald-700 text-sm font-semibold text-white">
-                {empresa.nome.slice(0, 2).toUpperCase()}
-              </span>
-            )}
-            <span className="min-w-0">
-              <span className="block text-sm font-semibold leading-tight text-gray-900">{empresa.nome}</span>
-              <span className="block text-xs text-gray-500">Controle de ponto</span>
-            </span>
-          </Link>
-          <button className="md:hidden text-sm text-gray-600" onClick={() => setAberto(!aberto)}>Menu</button>
+    <div className="min-h-screen md:flex">
+      {/* Menu lateral (computador) */}
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col justify-between bg-tinta py-6 md:flex">
+        <div className="space-y-8">
+          <div className="px-5">{marca}</div>
+          {navegacao}
         </div>
-        <nav className={`${aberto ? "block" : "hidden"} px-2 pb-4 md:block`}>
-          {menu.filter((item) => !item.soAdmin || usuario.papel === "admin").map((item) => {
-            const ativo = item.href === "/" ? caminho === "/" : caminho.startsWith(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setAberto(false)}
-                className={`block rounded-md px-3 py-2 text-sm ${ativo ? "bg-emerald-50 font-medium text-emerald-800" : "text-gray-700 hover:bg-gray-50"}`}
-              >
-                {item.nome}
-              </Link>
-            );
-          })}
-          <div className="mt-6 border-t border-gray-100 px-3 pt-4 text-xs text-gray-500">
-            <div className="truncate">{usuario.nome}</div>
-            <button className="mt-1 underline" onClick={() => supabase.auth.signOut()}>Sair</button>
-          </div>
-        </nav>
+        {rodape}
       </aside>
-      <main className="min-w-0 flex-1 p-4 md:p-6">{children}</main>
+
+      {/* Barra superior (celular) */}
+      <header className="sticky top-0 z-[1000] flex items-center justify-between bg-tinta px-4 py-3 md:hidden">
+        {marca}
+        <button className="rounded-lg p-2 text-white" onClick={() => setAberto(!aberto)} aria-label="Menu">
+          {aberto ? <X size={20} /> : <Menu size={20} />}
+        </button>
+      </header>
+      <AnimatePresence>
+        {aberto && (
+          <motion.div
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-x-0 top-[68px] z-[1000] space-y-4 bg-tinta pb-5 pt-2 shadow-2xl md:hidden"
+          >
+            {navegacao}
+            {rodape}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <main className="min-w-0 flex-1 px-4 py-6 md:px-10 md:py-10">
+        <div key={caminho} className="mx-auto max-w-7xl animate-entrar">{children}</div>
+      </main>
     </div>
   );
 }

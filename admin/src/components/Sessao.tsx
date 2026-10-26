@@ -71,14 +71,22 @@ export function Sessao({ children }: { children: React.ReactNode }) {
 
   if (erro) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-6 text-center">
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-6 text-center animate-entrar">
         <p>{erro}</p>
         <button className="botao-sec" onClick={() => supabase.auth.signOut()}>Sair</button>
       </div>
     );
   }
   if (!usuario || !empresa) {
-    return <div className="flex min-h-screen items-center justify-center text-gray-500">Carregando…</div>;
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4">
+        <span className="relative flex h-3 w-3">
+          <span className="absolute inset-0 rounded-full bg-tinta animate-pulso" />
+          <span className="relative h-3 w-3 rounded-full bg-tinta" />
+        </span>
+        <span className="rotulo">Carregando</span>
+      </div>
+    );
   }
   return (
     <Contexto.Provider value={{ usuario, empresa, atualizarEmpresa: setEmpresa }}>

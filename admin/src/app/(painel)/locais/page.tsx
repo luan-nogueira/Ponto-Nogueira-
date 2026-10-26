@@ -63,14 +63,14 @@ export default function PaginaLocais() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Locais de trabalho</h1>
+        <h1 className="titulo">Locais de trabalho</h1>
         <button className="botao" onClick={() => abrir("novo")}>Novo local</button>
       </div>
 
       {editando && (
-        <form onSubmit={salvar} className="cartao grid gap-4 p-4 lg:grid-cols-[320px_1fr]">
+        <form onSubmit={salvar} className="cartao grid gap-6 p-6 animate-entrar lg:grid-cols-[320px_1fr]">
           <div className="space-y-3">
             <h2 className="font-medium">{editando === "novo" ? "Novo local" : `Editar ${editando.nome}`}</h2>
             <label className="block text-sm">Nome<input className="campo mt-1" required placeholder="Ex.: Atacadão Marginal" value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></label>
@@ -82,7 +82,7 @@ export default function PaginaLocais() {
                 <button type="button" className="botao-sec" onClick={buscarEndereco}>Buscar</button>
               </div>
               {resultados.map((r) => (
-                <button type="button" key={r.display_name} className="mt-1 block w-full rounded px-2 py-1 text-left text-xs hover:bg-gray-100"
+                <button type="button" key={r.display_name} className="mt-1 block w-full rounded px-2 py-1 text-left text-xs hover:bg-neutral-100"
                   onClick={() => { setForm({ ...form, endereco: r.display_name, lat: +r.lat, lng: +r.lon }); setResultados([]); }}>
                   {r.display_name}
                 </button>
@@ -90,15 +90,15 @@ export default function PaginaLocais() {
             </div>
             <label className="block text-sm">Endereço<input className="campo mt-1" value={form.endereco} onChange={(e) => setForm({ ...form, endereco: e.target.value })} /></label>
             <label className="block text-sm">
-              Raio permitido: <b>{form.raio_metros} m</b>
+              Raio permitido: <b className="font-mono">{form.raio_metros} m</b>
               <input type="range" min={30} max={1000} step={10} className="mt-1 w-full" value={form.raio_metros}
                 onChange={(e) => setForm({ ...form, raio_metros: +e.target.value })} />
-              <span className="text-xs text-gray-500">Inclua o estacionamento se o funcionário pode bater ponto lá. GPS de celular erra de 10 a 30 m.</span>
+              <span className="text-xs text-suave">Inclua o estacionamento se o funcionário pode bater ponto lá. GPS de celular erra de 10 a 30 m.</span>
             </label>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-suave">
               {form.lat != null ? `Centro: ${form.lat.toFixed(6)}, ${form.lng!.toFixed(6)}. Clique no mapa para ajustar.` : "Clique no mapa no ponto central do local."}
             </p>
-            {erro && <p className="text-sm text-red-700">{erro}</p>}
+            {erro && <p className="text-sm text-perigo">{erro}</p>}
             <div className="flex gap-2">
               <button className="botao">Salvar</button>
               <button type="button" className="botao-sec" onClick={() => setEditando(null)}>Cancelar</button>
@@ -114,26 +114,26 @@ export default function PaginaLocais() {
         </form>
       )}
 
-      <div className="cartao overflow-hidden">
-        <Mapa className="h-80 w-full" cercas={locais.filter((l) => l.ativo).map((l) => ({ id: l.id, lat: l.lat, lng: l.lng, raio: l.raio_metros, nome: l.nome }))} />
+      <div className="cartao overflow-hidden p-1.5 animate-entrar [animation-delay:60ms]">
+        <Mapa className="h-80 w-full rounded-xl" cercas={locais.filter((l) => l.ativo).map((l) => ({ id: l.id, lat: l.lat, lng: l.lng, raio: l.raio_metros, nome: l.nome }))} />
       </div>
 
-      <div className="cartao overflow-x-auto">
+      <div className="cartao overflow-x-auto animate-entrar [animation-delay:120ms]">
         <table className="tabela">
           <thead><tr><th>Nome</th><th>Endereço</th><th>Raio</th><th></th></tr></thead>
           <tbody>
             {locais.map((l) => (
-              <tr key={l.id} className={l.ativo ? "" : "text-gray-400"}>
+              <tr key={l.id} className={l.ativo ? "" : "text-neutral-400"}>
                 <td>{l.nome}{!l.ativo && " (inativo)"}</td>
                 <td className="max-w-md">{l.endereco ?? "—"}</td>
                 <td>{l.raio_metros} m</td>
                 <td className="whitespace-nowrap text-right">
-                  <button className="text-emerald-700 underline" onClick={() => abrir(l)}>Editar</button>
-                  <button className="ml-3 text-gray-600 underline" onClick={() => alternarAtivo(l)}>{l.ativo ? "Desativar" : "Reativar"}</button>
+                  <button className="font-medium text-tinta underline-offset-4 hover:underline" onClick={() => abrir(l)}>Editar</button>
+                  <button className="ml-3 text-suave underline-offset-4 hover:text-tinta hover:underline" onClick={() => alternarAtivo(l)}>{l.ativo ? "Desativar" : "Reativar"}</button>
                 </td>
               </tr>
             ))}
-            {locais.length === 0 && <tr><td colSpan={4} className="text-gray-500">Nenhum local cadastrado.</td></tr>}
+            {locais.length === 0 && <tr><td colSpan={4} className="text-suave">Nenhum local cadastrado.</td></tr>}
           </tbody>
         </table>
       </div>

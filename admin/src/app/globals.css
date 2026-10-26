@@ -1,29 +1,126 @@
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
 
-body {
-  background: #f6f7f9;
-  color: #1f2937;
+/* Tema preto e branco. Cores de status ficam só onde carregam significado (recusada, alerta). */
+@theme {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --color-tinta: #0a0a0a;
+  --color-papel: #fafafa;
+  --color-linha: #e7e7e7;
+  --color-suave: #737373;
+  --color-perigo: #dc2626;
+  --animate-entrar: entrar 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-brilho: brilho 1.6s linear infinite;
+  --animate-pulso: pulso 2s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
 
+@keyframes entrar {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes brilho {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+@keyframes pulso {
+  0% { transform: scale(1); opacity: 0.55; }
+  80%, 100% { transform: scale(2.6); opacity: 0; }
+}
+
+body {
+  background: var(--color-papel);
+  color: var(--color-tinta);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection { background: var(--color-tinta); color: white; }
+
+/* Componentes ------------------------------------------------------------------ */
+
+@layer components {
 .campo {
-  @apply w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600;
+  @apply w-full rounded-lg border border-linha bg-white px-3 py-2.5 text-sm outline-none transition
+         placeholder:text-neutral-400 focus:border-tinta focus:ring-4 focus:ring-black/5;
 }
 .botao {
-  @apply inline-flex items-center justify-center gap-2 rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800 disabled:opacity-50;
+  @apply inline-flex items-center justify-center gap-2 rounded-lg bg-tinta px-4 py-2.5 text-sm font-medium text-white
+         shadow-sm transition duration-200 hover:-translate-y-px hover:bg-neutral-800 hover:shadow-md
+         active:translate-y-0 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40;
 }
 .botao-sec {
-  @apply inline-flex items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50;
+  @apply inline-flex items-center justify-center gap-2 rounded-lg border border-linha bg-white px-4 py-2.5 text-sm font-medium text-tinta
+         transition duration-200 hover:-translate-y-px hover:border-tinta active:translate-y-0 active:scale-[0.98]
+         disabled:pointer-events-none disabled:opacity-40;
 }
 .cartao {
-  @apply rounded-lg border border-gray-200 bg-white shadow-sm;
+  @apply rounded-2xl border border-linha bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)];
+}
+.cartao-vivo {
+  @apply transition duration-300 hover:-translate-y-0.5 hover:border-neutral-300 hover:shadow-[0_12px_30px_-12px_rgba(0,0,0,0.18)];
+}
+.titulo {
+  @apply text-2xl font-semibold tracking-tight md:text-3xl;
+}
+.rotulo {
+  @apply text-[11px] font-medium uppercase tracking-[0.12em] text-suave;
 }
 .tabela {
   @apply w-full text-left text-sm;
 }
 .tabela th {
-  @apply border-b border-gray-200 bg-gray-50 px-3 py-2 font-medium text-gray-600;
+  @apply border-b border-linha px-4 py-3 text-[11px] font-medium uppercase tracking-[0.1em] text-suave;
 }
 .tabela td {
-  @apply border-b border-gray-100 px-3 py-2 align-top;
+  @apply border-b border-neutral-100 px-4 py-3 align-top;
 }
+.tabela tbody tr {
+  @apply transition-colors duration-150 hover:bg-neutral-50;
+  animation: var(--animate-entrar);
+}
+.selo {
+  @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium;
+}
+.esqueleto {
+  @apply rounded-lg;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e4e4e4 37%, #f0f0f0 63%);
+  background-size: 400% 100%;
+  animation: var(--animate-brilho);
+}
+
+}
+
+/* Filhos entram em sequência */
+.escalonado > * { animation: var(--animate-entrar); }
+.escalonado > *:nth-child(1) { animation-delay: 0ms; }
+.escalonado > *:nth-child(2) { animation-delay: 60ms; }
+.escalonado > *:nth-child(3) { animation-delay: 120ms; }
+.escalonado > *:nth-child(4) { animation-delay: 180ms; }
+.escalonado > *:nth-child(5) { animation-delay: 240ms; }
+.escalonado > *:nth-child(6) { animation-delay: 300ms; }
+.escalonado > *:nth-child(n + 7) { animation-delay: 340ms; }
+
+/* Mapa em tons de cinza, combinando com o tema */
+.mapa-pb .leaflet-tile-pane { filter: grayscale(1) contrast(1.05) brightness(1.02); }
+.mapa-pb .leaflet-control-zoom a { @apply text-tinta; }
+.mapa-pb .leaflet-popup-content-wrapper { @apply rounded-xl shadow-xl; }
+.mapa-pb .leaflet-container { font-family: var(--font-sans); }
+
+/* Marcador de colaborador no mapa */
+.marcador { position: relative; width: 34px; height: 34px; }
+.marcador-bola {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  border-radius: 9999px; border: 2px solid white; font-size: 11px; font-weight: 600; letter-spacing: 0.02em;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+.marcador-onda {
+  position: absolute; inset: 0; border-radius: 9999px; background: currentColor;
+  animation: var(--animate-pulso);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
+
+input[type="checkbox"], input[type="radio"], input[type="range"] { accent-color: var(--color-tinta); }

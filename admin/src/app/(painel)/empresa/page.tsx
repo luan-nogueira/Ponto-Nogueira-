@@ -17,7 +17,7 @@ export default function PaginaEmpresa() {
   const [mensagem, setMensagem] = useState<{ erro: boolean; texto: string } | null>(null);
   const [salvando, setSalvando] = useState(false);
 
-  if (eu.papel !== "admin") return <p className="text-gray-600">Apenas o administrador altera os dados da empresa.</p>;
+  if (eu.papel !== "admin") return <p className="text-suave">Apenas o administrador altera os dados da empresa.</p>;
 
   function escolherLogo(arquivo: File | undefined) {
     setMensagem(null);
@@ -56,31 +56,31 @@ export default function PaginaEmpresa() {
   }
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Empresa</h1>
+    <div className="space-y-6">
+      <h1 className="titulo">Empresa</h1>
       <form onSubmit={salvar} className="cartao grid max-w-3xl gap-6 p-4 md:grid-cols-[200px_1fr]">
         <div className="space-y-2">
-          <div className="flex h-48 w-48 items-center justify-center overflow-hidden rounded-lg border border-dashed border-gray-300 bg-white">
+          <div className="flex h-48 w-48 items-center justify-center overflow-hidden rounded-lg border border-dashed border-linha bg-white">
             {previa ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={previa} alt="Logo" className="max-h-full max-w-full object-contain" />
             ) : (
-              <span className="px-4 text-center text-xs text-gray-500">Sem logo</span>
+              <span className="px-4 text-center text-xs text-suave">Sem logo</span>
             )}
           </div>
           <label className="botao-sec w-48 cursor-pointer">
             Escolher logo
             <input type="file" accept={tiposLogo.join(",")} className="hidden" onChange={(e) => escolherLogo(e.target.files?.[0])} />
           </label>
-          <p className="w-48 text-xs text-gray-500">Aparece no painel e no app dos colaboradores. PNG com fundo branco ou transparente, até 1 MB.</p>
+          <p className="w-48 text-xs text-suave">Aparece no painel e no app dos colaboradores. PNG com fundo branco ou transparente, até 1 MB.</p>
         </div>
         <div className="space-y-3">
           <label className="block text-sm">Nome da empresa<input className="campo mt-1" required value={nome} onChange={(e) => setNome(e.target.value)} /></label>
           <label className="block text-sm">CNPJ
             <input className="campo mt-1" value={cnpj} maxLength={14} onChange={(e) => setCnpj(e.target.value.replace(/\D/g, ""))} />
-            <span className="text-xs text-gray-500">Sai no comprovante de cada batida.</span>
+            <span className="text-xs text-suave">Sai no comprovante de cada batida.</span>
           </label>
-          {mensagem && <p className={`text-sm ${mensagem.erro ? "text-red-700" : "text-emerald-700"}`}>{mensagem.texto}</p>}
+          {mensagem && <p className={`text-sm ${mensagem.erro ? "text-perigo" : "text-tinta"}`}>{mensagem.texto}</p>}
           <button className="botao" disabled={salvando}>{salvando ? "Salvando…" : "Salvar"}</button>
         </div>
       </form>

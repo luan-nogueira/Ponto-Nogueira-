@@ -2,21 +2,25 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { AnimatePresence, motion } from "motion/react";
+import { ArrowUpRight, Battery, Coffee, Moon, TriangleAlert, Zap } from "lucide-react";
 import Mapa, { type Marcador } from "@/components/Mapa";
 import { FotoBatida } from "@/components/FotoBatida";
+import { Avatar, Cabecalho, Contador, PontoVivo, SeloStatus, iniciais } from "@/components/ui";
 import { supabase } from "@/lib/supabase";
-import { corStatus, haQuanto, hora, inicioDoDia, nomeStatus, nomeTipo } from "@/lib/formato";
+import { haQuanto, hora, inicioDoDia, nomeTipo } from "@/lib/formato";
 import type { Batida, Local, SituacaoColaborador } from "@/lib/tipos";
 
-const corSituacao = { trabalhando: "#059669", intervalo: "#d97706", fora_jornada: "#9ca3af" };
-const nomeSituacao = { trabalhando: "Trabalhando", intervalo: "Intervalo", fora_jornada: "Fora da jornada" };
+const corSituacao = { trabalhando: "#0a0a0a", intervalo: "#737373", fora_jornada: "#e5e5e5" };
+const nomeSituacao = { trabalhando: "Trabalhando", intervalo: "Em intervalo", fora_jornada: "Fora da jornada" };
 
 export default function AoVivo() {
   const [equipe, setEquipe] = useState<SituacaoColaborador[]>([]);
   const [locais, setLocais] = useState<Local[]>([]);
-  const [batidas, setBatidas] = useState<Batida[]>([]);
+  const [batidas, setBatidas] = useState<Batida[] | null>(null);
   const [alertas, setAlertas] = useState(0);
   const [foco, setFoco] = useState<[number, number] | undefined>();
+  const [atualizado, setAtualizado] = useState<Date | null>(null);
   const espera = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const carregar = useCallback(async () => {
@@ -35,6 +39,7 @@ export default function AoVivo() {
     setLocais((l.data as Local[]) ?? []);
     setBatidas((b.data as Batida[]) ?? []);
     setAlertas(a.count ?? 0);
+    setAtualizado(new Date());
   }, []);
 
   useEffect(() => {
@@ -70,100 +75,166 @@ export default function AoVivo() {
       lat: c.lat!,
       lng: c.lng!,
       cor: corSituacao[c.situacao],
+      texto: iniciais(c.nome),
+      pulsar: c.situacao === "trabalhando",
       rotulo: `${c.nome} · ${haQuanto(c.posicao_em)}`,
       detalhe: (
-        <div className="text-sm">
-          <div className="font-medium">{c.nome}</div>
-          <div>{nomeSituacao[c.situacao]}</div>
+        <div className="min-w-44 space-y-1 text-sm">
+          <div className="font-semibold">{c.nome}</div>
+          <div className="text-neutral-500">{nomeSituacao[c.situacao]}</div>
           <div>
             {c.ultima_batida_tipo && nomeTipo[c.ultima_batida_tipo]} às {hora(c.ultima_batida_em)}
             {c.ultima_batida_local && ` em ${c.ultima_batida_local}`}
           </div>
-          <div className="text-gray-500">Posição {haQuanto(c.posicao_em)}{c.bateria != null && ` · bateria ${c.bateria}%`}</div>
+          <div className="text-xs text-neutral-500">
+            Posição {haQuanto(c.posicao_em)}
+            {c.bateria != null && ` · bateria ${c.bateria}%`}
+          </div>
         </div>
       ),
     }));
 
+  const cartoes = [
+    { titulo: "Trabalhando", valor: contagem.trabalhando, icone: Zap, escuro: true },
+    { titulo: "Em intervalo", valor: contagem.intervalo, icone: Coffee },
+    { titulo: "Fora da jornada", valor: contagem.fora_jornada, icone: Moon },
+    { titulo: "Alertas", valor: alertas, icone: TriangleAlert, href: "/alertas", alerta: alertas > 0 },
+  ];
+
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h1 className="text-xl font-semibold">Ao vivo</h1>
-        <span className="text-xs text-gray-500">Atualiza sozinho</span>
+    <div className="space-y-8">
+      <Cabecalho
+        titulo="Ao vivo"
+        subtitulo={
+          <span className="inline-flex items-center gap-2">
+            <PontoVivo /> Atualizando em tempo real{atualizado && ` · ${hora(atualizado.toISOString())}`}
+          </span>
+        }
+      />
+
+      <div className="escalonado grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+        {cartoes.map((c) => {
+          const Icone = c.icone;
+          const conteudo = (
+            <div
+              className={`cartao cartao-vivo group relative h-full overflow-hidden p-5 ${
+                c.escuro ? "border-tinta bg-tinta text-white" : ""
+              }`}
+            >
+              <div className="flex items-start justify-between">
+                <span className={`rotulo ${c.escuro ? "text-neutral-400" : ""}`}>{c.titulo}</span>
+                <Icone size={18} className={c.alerta ? "text-perigo" : c.escuro ? "text-neutral-500" : "text-neutral-300"} />
+              </div>
+              <Contador valor={c.valor} className={`mt-4 block text-4xl font-medium md:text-5xl ${c.alerta ? "text-perigo" : ""}`} />
+              {c.href && (
+                <ArrowUpRight size={16} className="absolute bottom-4 right-4 text-neutral-300 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-tinta" />
+              )}
+            </div>
+          );
+          return c.href ? <Link key={c.titulo} href={c.href}>{conteudo}</Link> : <div key={c.titulo}>{conteudo}</div>;
+        })}
       </div>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Numero titulo="Trabalhando" valor={contagem.trabalhando} cor="text-emerald-700" />
-        <Numero titulo="Em intervalo" valor={contagem.intervalo} cor="text-amber-700" />
-        <Numero titulo="Fora da jornada" valor={contagem.fora_jornada} cor="text-gray-600" />
-        <Link href="/alertas">
-          <Numero titulo="Alertas não lidos" valor={alertas} cor={alertas ? "text-red-700" : "text-gray-600"} />
-        </Link>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="cartao overflow-hidden lg:col-span-2">
+      <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
+        <div className="cartao relative overflow-hidden p-1.5 animate-entrar [animation-delay:200ms]">
           <Mapa
+            className="h-[520px] w-full rounded-xl"
             marcadores={marcadores}
             cercas={locais.map((l) => ({ id: l.id, lat: l.lat, lng: l.lng, raio: l.raio_metros, nome: l.nome }))}
             centro={foco}
           />
-        </div>
-        <div className="cartao max-h-[480px] overflow-y-auto">
-          <h2 className="border-b border-gray-100 px-4 py-3 text-sm font-medium">Equipe</h2>
-          {equipe.length === 0 && <p className="p-4 text-sm text-gray-500">Nenhum colaborador cadastrado.</p>}
-          {equipe.map((c) => (
-            <button
-              key={c.usuario_id}
-              className="flex w-full items-center gap-3 border-b border-gray-50 px-4 py-2 text-left hover:bg-gray-50"
-              onClick={() => c.lat != null && c.lng != null && setFoco([c.lat, c.lng])}
-            >
-              <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: corSituacao[c.situacao] }} />
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm">{c.nome}</span>
-                <span className="block truncate text-xs text-gray-500">
-                  {c.ultima_batida_tipo
-                    ? `${nomeTipo[c.ultima_batida_tipo]} ${hora(c.ultima_batida_em)} · ${c.ultima_batida_local ?? ""}`
-                    : "Sem batida hoje"}
-                </span>
+          <div className="pointer-events-none absolute right-5 top-5 z-[500] flex gap-2">
+            {(["trabalhando", "intervalo"] as const).map((s) => (
+              <span key={s} className="flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1 text-xs shadow backdrop-blur">
+                <span className="h-2 w-2 rounded-full" style={{ background: corSituacao[s] }} /> {nomeSituacao[s]}
               </span>
-            </button>
-          ))}
+            ))}
+          </div>
+        </div>
+
+        <div className="cartao flex max-h-[532px] flex-col animate-entrar [animation-delay:260ms]">
+          <div className="flex items-center justify-between border-b border-linha px-5 py-4">
+            <h2 className="font-semibold">Equipe</h2>
+            <span className="rotulo">{equipe.length} pessoas</span>
+          </div>
+          <div className="escalonado flex-1 overflow-y-auto p-2">
+            {equipe.length === 0 && <p className="p-6 text-center text-sm text-suave">Nenhum colaborador cadastrado.</p>}
+            {equipe.map((c) => (
+              <button
+                key={c.usuario_id}
+                className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-neutral-50 active:scale-[0.99]"
+                onClick={() => c.lat != null && c.lng != null && setFoco([c.lat, c.lng])}
+              >
+                <span className="relative">
+                  <Avatar nome={c.nome} escuro={c.situacao === "trabalhando"} />
+                  {c.situacao !== "fora_jornada" && (
+                    <span className="absolute -bottom-0.5 -right-0.5 rounded-full bg-white p-0.5">
+                      <PontoVivo cor={c.situacao === "trabalhando" ? "bg-tinta" : "bg-neutral-400"} tamanho="h-2 w-2" />
+                    </span>
+                  )}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium">{c.nome}</span>
+                  <span className="block truncate text-xs text-suave">
+                    {c.ultima_batida_tipo
+                      ? `${nomeTipo[c.ultima_batida_tipo]} ${hora(c.ultima_batida_em)} · ${c.ultima_batida_local ?? ""}`
+                      : "Sem batida hoje"}
+                  </span>
+                </span>
+                {c.bateria != null && c.situacao !== "fora_jornada" && (
+                  <span className="flex items-center gap-1 text-[11px] text-suave"><Battery size={13} />{c.bateria}%</span>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      <div className="cartao overflow-x-auto">
-        <h2 className="border-b border-gray-100 px-4 py-3 text-sm font-medium">Batidas de hoje</h2>
-        <table className="tabela">
-          <thead>
-            <tr><th>Foto</th><th>Hora</th><th>Colaborador</th><th>Tipo</th><th>Local</th><th>Situação</th></tr>
-          </thead>
-          <tbody>
-            {batidas.map((b) => (
-              <tr key={b.id}>
-                <td><FotoBatida caminho={b.foto_path} tamanho={36} /></td>
-                <td>{hora(b.registrado_em)}</td>
-                <td>{b.usuarios?.nome}</td>
-                <td>{nomeTipo[b.tipo]}</td>
-                <td>{b.locais?.nome ?? "—"}{b.distancia_m != null && <span className="text-gray-500"> · {Math.round(b.distancia_m)} m</span>}</td>
-                <td>
-                  <span className={`rounded px-2 py-0.5 text-xs ${corStatus[b.status]}`}>{nomeStatus[b.status]}</span>
-                  {b.motivo_rejeicao && <div className="mt-1 text-xs text-gray-500">{b.motivo_rejeicao}</div>}
-                </td>
-              </tr>
+      <div className="cartao overflow-hidden animate-entrar [animation-delay:320ms]">
+        <div className="flex items-center justify-between border-b border-linha px-5 py-4">
+          <h2 className="font-semibold">Linha do tempo de hoje</h2>
+          <Link href="/batidas" className="flex items-center gap-1 text-sm text-suave transition hover:text-tinta">
+            Ver todas <ArrowUpRight size={14} />
+          </Link>
+        </div>
+        <ol className="relative px-5 py-4">
+          <span className="absolute bottom-6 left-[38px] top-6 w-px bg-linha" />
+          {batidas === null &&
+            Array.from({ length: 3 }).map((_, i) => (
+              <li key={i} className="flex items-center gap-4 py-3"><div className="esqueleto h-9 w-9 rounded-full" /><div className="esqueleto h-4 w-64" /></li>
             ))}
-            {batidas.length === 0 && <tr><td colSpan={6} className="text-gray-500">Nenhuma batida hoje.</td></tr>}
-          </tbody>
-        </table>
+          {batidas?.length === 0 && <li className="py-8 text-center text-sm text-suave">Nenhuma batida hoje ainda.</li>}
+          <AnimatePresence initial={false}>
+            {batidas?.map((b, i) => (
+              <motion.li
+                key={b.id}
+                layout
+                initial={{ opacity: 0, x: -12 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: Math.min(i, 10) * 0.035 }}
+                className="relative flex items-center gap-4 rounded-xl py-2.5 pl-1 pr-2 transition hover:bg-neutral-50"
+              >
+                <span className={`relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-4 border-white ${
+                  b.status === "rejeitada" ? "bg-red-100" : b.status === "valida" ? "bg-tinta" : "bg-neutral-300"
+                }`}>
+                  <span className={`h-1.5 w-1.5 rounded-full ${b.status === "rejeitada" ? "bg-perigo" : "bg-white"}`} />
+                </span>
+                <span className="w-14 shrink-0 font-mono text-sm tabular-nums">{hora(b.registrado_em)}</span>
+                <FotoBatida caminho={b.foto_path} tamanho={36} />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm">
+                    <b className="font-medium">{b.usuarios?.nome}</b> <span className="text-suave">·</span> {nomeTipo[b.tipo]}
+                  </span>
+                  <span className="block truncate text-xs text-suave">
+                    {b.motivo_rejeicao ?? `${b.locais?.nome ?? "—"}${b.distancia_m != null ? ` · ${Math.round(b.distancia_m)} m do centro` : ""}`}
+                  </span>
+                </span>
+                <SeloStatus status={b.status} />
+              </motion.li>
+            ))}
+          </AnimatePresence>
+        </ol>
       </div>
-    </div>
-  );
-}
-
-function Numero({ titulo, valor, cor }: { titulo: string; valor: number; cor: string }) {
-  return (
-    <div className="cartao p-4">
-      <div className="text-xs text-gray-500">{titulo}</div>
-      <div className={`mt-1 text-2xl font-semibold ${cor}`}>{valor}</div>
     </div>
   );
 }
