@@ -89,16 +89,22 @@ jobs:
           K="$RUNNER_TEMP/ponto.keystore"
           S="$RUNNER_TEMP/senha.txt"
           O="$SUPABASE_URL/storage/v1/object/interno/assinatura"
-          if curl -sf "${H[@]}" -o "$K" "$O/ponto.keystore" && curl -sf "${H[@]}" -o "$S" "$O/senha.txt"; then
+          baixar() { curl -s "${H[@]}" -o "$2" -w '%{http_code}' "$O/$1"; }
+          CK=$(baixar ponto.keystore "$K"); CS=$(baixar senha.txt "$S")
+          if [ "$CK" = 200 ] && [ "$CS" = 200 ]; then
             echo "chave de assinatura baixada"
-          else
+          elif [ "$CK" != 200 ] && [ "$CS" != 200 ] && [[ "$CK" =~ ^(400|404)$ ]] && [[ "$CS" =~ ^(400|404)$ ]]; then
+            # só cria quando as duas faltam de verdade; um erro passageiro nunca troca a chave
             echo "primeira vez: criando a chave de assinatura"
             rm -f "$K"
             openssl rand -hex 24 > "$S"
             keytool -genkeypair -keystore "$K" -storetype PKCS12 -alias ponto -keyalg RSA -keysize 2048 -validity 10000 \
               -storepass "$(cat "$S")" -keypass "$(cat "$S")" -dname "CN=Ponto, O=Ponto, C=BR"
-            curl -sf "${H[@]}" -H "Content-Type: application/octet-stream" -X POST --data-binary @"$K" "$O/ponto.keystore"
             curl -sf "${H[@]}" -H "Content-Type: text/plain" -X POST --data-binary @"$S" "$O/senha.txt"
+            curl -sf "${H[@]}" -H "Content-Type: application/octet-stream" -X POST --data-binary @"$K" "$O/ponto.keystore"
+          else
+            echo "::error::Não consegui baixar a chave de assinatura (respostas $CK e $CS)"
+            exit 1
           fi
           echo "::add-mask::$(cat "$S")"
           echo "PONTO_KEYSTORE=$K" >> "$GITHUB_ENV"
