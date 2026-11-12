@@ -76,7 +76,8 @@ jobs:
           fi
           echo "::add-mask::$CHAVE"
           echo "chave=$CHAVE" >> "$GITHUB_OUTPUT"
-          H=(-H "Authorization: Bearer $CHAVE" -H "apikey: $CHAVE")
+          # chave nova (sb_secret_) vai só no cabeçalho apikey; a antiga (JWT) também no Authorization
+          if [[ "$CHAVE" == sb_* ]]; then H=(-H "apikey: $CHAVE"); else H=(-H "Authorization: Bearer $CHAVE" -H "apikey: $CHAVE"); fi
           # buckets: "app" (público, só o APK) e "interno" (privado, a chave de assinatura)
           curl -s "${H[@]}" -H "Content-Type: application/json" -X POST "$SUPABASE_URL/storage/v1/bucket" \
             -d '{"id":"app","name":"app","public":true}' >/dev/null
@@ -115,7 +116,8 @@ jobs:
           CHAVE: ${{ steps.pub.outputs.chave }}
         run: |
           APK=$(ls app/build/outputs/apk/debug/*.apk | head -1)
-          curl -sf -H "Authorization: Bearer $CHAVE" -H "apikey: $CHAVE" -H "x-upsert: true" \
+          if [[ "$CHAVE" == sb_* ]]; then H=(-H "apikey: $CHAVE"); else H=(-H "Authorization: Bearer $CHAVE" -H "apikey: $CHAVE"); fi
+          curl -sf "${H[@]}" -H "x-upsert: true" \
             -H "Content-Type: application/vnd.android.package-archive" -H "cache-control: max-age=60" \
             -X POST --data-binary @"$APK" "$SUPABASE_URL/storage/v1/object/app/ponto.apk"
           URL="$SUPABASE_URL/storage/v1/object/public/app/ponto.apk"
