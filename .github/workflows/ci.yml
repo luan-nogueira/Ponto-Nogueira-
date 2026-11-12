@@ -101,21 +101,22 @@ jobs:
           echo "PONTO_KEYSTORE=$K" >> "$GITHUB_ENV"
           echo "PONTO_KEYSTORE_SENHA=$(cat "$S")" >> "$GITHUB_ENV"
       - name: Gerar APK
-        run: ./gradlew assembleDebug --no-daemon
+        # com a chave fixa gera a versão final (release); sem ela, a de teste (debug)
+        run: ./gradlew $([ -n "$PONTO_KEYSTORE" ] && echo assembleRelease || echo assembleDebug) --no-daemon
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
       - uses: actions/upload-artifact@v4
         with:
-          name: ponto-debug-apk
-          path: android/app/build/outputs/apk/debug/*.apk
+          name: ponto-apk
+          path: android/app/build/outputs/apk/*/*.apk
       - name: Publicar o APK no link de download
         if: steps.pub.outputs.chave != ''
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           CHAVE: ${{ steps.pub.outputs.chave }}
         run: |
-          APK=$(ls app/build/outputs/apk/debug/*.apk | head -1)
+          APK=$(ls app/build/outputs/apk/release/*.apk | head -1)
           if [[ "$CHAVE" == sb_* ]]; then H=(-H "apikey: $CHAVE"); else H=(-H "Authorization: Bearer $CHAVE" -H "apikey: $CHAVE"); fi
           curl -sf "${H[@]}" -H "x-upsert: true" \
             -H "Content-Type: application/vnd.android.package-archive" -H "cache-control: max-age=60" \

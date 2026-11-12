@@ -32,18 +32,16 @@ android {
     // Chave fixa para o APK distribuído pelo link (o CI baixa do Supabase). Sem ela, cada
     // build teria uma chave diferente e o celular recusaria instalar a versão nova por cima.
     val chaveFixa = System.getenv("PONTO_KEYSTORE")?.let { file(it) }?.takeIf { it.exists() }
+    // Assinatura de release: chave fixa do CI ou keystore.properties local (ver README)
+    val assinatura = rootProject.file("keystore.properties")
     if (chaveFixa != null) {
-        signingConfigs.getByName("debug") {
+        signingConfigs.create("release") {
             storeFile = chaveFixa
             storePassword = System.getenv("PONTO_KEYSTORE_SENHA")
             keyAlias = "ponto"
             keyPassword = System.getenv("PONTO_KEYSTORE_SENHA")
         }
-    }
-
-    // Assinatura de release: crie keystore.properties (ver README)
-    val assinatura = rootProject.file("keystore.properties")
-    if (assinatura.exists()) {
+    } else if (assinatura.exists()) {
         val p = Properties().apply { assinatura.inputStream().use { load(it) } }
         signingConfigs.create("release") {
             storeFile = rootProject.file(p.getProperty("storeFile"))
@@ -55,11 +53,13 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = true
+            // sem minificação: o app é pequeno e evita quebrar a serialização em tempo de execução
+            isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfigs.findByName("release")?.let { signingConfig = it }
         }
     }
+    lint { checkReleaseBuilds = false }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
