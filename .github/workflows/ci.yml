@@ -61,18 +61,18 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
         run: |
-          [ -n "$SUPABASE_ACCESS_TOKEN" ] || { echo "sem SUPABASE_ACCESS_TOKEN, não publica"; exit 0; }
-          REF=$(echo "$SUPABASE_URL" | sed -E 's#https://([^.]+)\.supabase\.co.*#\1#')
-          CHAVES=$(curl -sf -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" "https://api.supabase.com/v1/projects/$REF/api-keys?reveal=true") \
-            || { echo "a API do Supabase recusou o token"; exit 1; }
-          # chave secreta nova (sb_secret_...) ou, se não houver, a service_role antiga
-          CHAVE=$(echo "$CHAVES" | jq -r '[.[] | select(.type == "secret")][0].api_key // empty')
-          [ -n "$CHAVE" ] || CHAVE=$(echo "$CHAVES" | jq -r '[.[] | select(.name == "service_role")][0].api_key // empty')
+          # chave secreta do projeto (Settings > API Keys > sb_secret_...), cadastrada como secret do GitHub
+          CHAVE="$SUPABASE_SECRET_KEY"
+          if [ -z "$CHAVE" ] && [ -n "$SUPABASE_ACCESS_TOKEN" ]; then
+            REF=$(echo "$SUPABASE_URL" | sed -E 's#https://([^.]+)\.supabase\.co.*#\1#')
+            CHAVES=$(curl -s -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" "https://api.supabase.com/v1/projects/$REF/api-keys?reveal=true")
+            CHAVE=$(echo "$CHAVES" | jq -r 'if type == "array" then ([.[] | select(.type == "secret" or .name == "service_role")][0].api_key // empty) else empty end')
+          fi
           if [ -z "$CHAVE" ]; then
-            echo "não achei chave secreta. ref com ${#REF} letras; resposta: $(echo "$CHAVES" | jq -c 'if type == "array" then map({name, type, tem: (.api_key != null)}) else . end')"
-            echo "sem reveal: $(curl -s -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" "https://api.supabase.com/v1/projects/$REF/api-keys" | jq -c 'if type == "array" then map({name, type}) else . end')"
-            exit 1
+            echo "::warning::Sem SUPABASE_SECRET_KEY: o APK não foi publicado no link de download"
+            exit 0
           fi
           echo "::add-mask::$CHAVE"
           echo "chave=$CHAVE" >> "$GITHUB_OUTPUT"
