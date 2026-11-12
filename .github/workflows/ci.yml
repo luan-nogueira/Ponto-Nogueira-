@@ -75,7 +75,10 @@ jobs:
             exit 0
           fi
           echo "::add-mask::$CHAVE"
-          echo "chave=$CHAVE" >> "$GITHUB_OUTPUT"
+          if ! curl -s -o /dev/null --max-time 20 "$SUPABASE_URL/rest/v1/"; then
+            echo "::warning::O Supabase não respondeu (projeto pausado?): o APK não foi publicado no link de download"
+            exit 0
+          fi
           # chave nova (sb_secret_) vai só no cabeçalho apikey; a antiga (JWT) também no Authorization
           if [[ "$CHAVE" == sb_* ]]; then H=(-H "apikey: $CHAVE"); else H=(-H "Authorization: Bearer $CHAVE" -H "apikey: $CHAVE"); fi
           # buckets: "app" (público, só o APK) e "interno" (privado, a chave de assinatura)
@@ -100,6 +103,7 @@ jobs:
           echo "::add-mask::$(cat "$S")"
           echo "PONTO_KEYSTORE=$K" >> "$GITHUB_ENV"
           echo "PONTO_KEYSTORE_SENHA=$(cat "$S")" >> "$GITHUB_ENV"
+          echo "chave=$CHAVE" >> "$GITHUB_OUTPUT"
       - name: Gerar APK
         # com a chave fixa gera a versão final (release); sem ela, a de teste (debug)
         run: ./gradlew $([ -n "$PONTO_KEYSTORE" ] && echo assembleRelease || echo assembleDebug) --no-daemon
