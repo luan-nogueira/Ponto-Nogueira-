@@ -63,9 +63,9 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
         run: |
           [ -n "$SUPABASE_ACCESS_TOKEN" ] || { echo "sem SUPABASE_ACCESS_TOKEN, não publica"; exit 0; }
-          npx -y supabase@2.122.0 --version >/dev/null
           REF=$(echo "$SUPABASE_URL" | sed -E 's#https://([^.]+)\.supabase\.co.*#\1#')
-          CHAVES=$(npx -y supabase@2.122.0 projects api-keys --project-ref "$REF" --reveal -o json 2>/dev/null)
+          CHAVES=$(curl -sf -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" "https://api.supabase.com/v1/projects/$REF/api-keys?reveal=true") \
+            || { echo "a API do Supabase recusou o token"; exit 1; }
           # chave secreta nova (sb_secret_...) ou, se não houver, a service_role antiga
           CHAVE=$(echo "$CHAVES" | jq -r '[.[] | select(.type == "secret")][0].api_key // empty')
           [ -n "$CHAVE" ] || CHAVE=$(echo "$CHAVES" | jq -r '[.[] | select(.name == "service_role")][0].api_key // empty')
