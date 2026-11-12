@@ -128,10 +128,11 @@ export default function PaginaColaboradores() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="titulo">Colaboradores</h1>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 md:gap-3">
           <label className="flex items-center gap-2 text-sm text-suave">
             <input type="checkbox" checked={mostrarInativos} onChange={(e) => setMostrarInativos(e.target.checked)} /> Mostrar inativos
           </label>
+          <a className="botao-sec" href="/baixar" target="_blank" title="Página para o colaborador baixar o app">Link do app</a>
           {souAdmin && <button className="botao" onClick={() => abrir("novo")}>Novo colaborador</button>}
         </div>
       </div>

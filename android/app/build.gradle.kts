@@ -21,10 +21,24 @@ android {
         applicationId = "br.com.ponto.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        // no CI, cada build ganha um número maior (o Android só atualiza para versão igual ou maior)
+        val build = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull()
+        versionCode = build ?: 1
+        versionName = "0.1.${build ?: 0}"
         buildConfigField("String", "SUPABASE_URL", "\"${config("SUPABASE_URL")}\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"${config("SUPABASE_ANON_KEY")}\"")
+    }
+
+    // Chave fixa para o APK distribuído pelo link (o CI baixa do Supabase). Sem ela, cada
+    // build teria uma chave diferente e o celular recusaria instalar a versão nova por cima.
+    val chaveFixa = System.getenv("PONTO_KEYSTORE")?.let { file(it) }?.takeIf { it.exists() }
+    if (chaveFixa != null) {
+        signingConfigs.getByName("debug") {
+            storeFile = chaveFixa
+            storePassword = System.getenv("PONTO_KEYSTORE_SENHA")
+            keyAlias = "ponto"
+            keyPassword = System.getenv("PONTO_KEYSTORE_SENHA")
+        }
     }
 
     // Assinatura de release: crie keystore.properties (ver README)
