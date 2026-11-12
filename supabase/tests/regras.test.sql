@@ -176,3 +176,18 @@ select pg_temp.afirmar((select count(*) from batidas) = 0 and (select count(*) f
   'admin de outra empresa não vê nada desta');
 
 select pg_temp.sair();
+
+-- Vínculo de local pelo painel (antes dava "infinite recursion" na regra) -----------
+select pg_temp.entrar('00000000-0000-0000-0000-00000000000a');
+insert into usuario_locais values ('00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-0000000000c1');
+select pg_temp.afirmar((select count(*) from usuario_locais where usuario_id = '00000000-0000-0000-0000-000000000002') = 2,
+  'admin vincula colaborador a um local pelo painel');
+delete from usuario_locais where usuario_id = '00000000-0000-0000-0000-000000000002' and local_id = '00000000-0000-0000-0000-0000000000c1';
+select pg_temp.afirmar((select count(*) from usuario_locais where usuario_id = '00000000-0000-0000-0000-000000000002') = 1,
+  'admin remove o vínculo');
+do $$ begin
+  insert into usuario_locais values ('00000000-0000-0000-0000-0000000000b0', '00000000-0000-0000-0000-0000000000c1');
+  raise exception 'FALHOU: vinculou usuário de outra empresa';
+exception when insufficient_privilege then raise notice 'ok - não vincula usuário de outra empresa';
+end $$;
+select pg_temp.sair();

@@ -92,8 +92,14 @@ export default function PaginaColaboradores() {
         const atuais = vinculos.filter((v) => v.usuario_id === editando.id).map((v) => v.local_id);
         const remover = atuais.filter((id) => !locaisForm.includes(id));
         const adicionar = locaisForm.filter((id) => !atuais.includes(id));
-        if (remover.length) await supabase.from("usuario_locais").delete().eq("usuario_id", editando.id).in("local_id", remover);
-        if (adicionar.length) await supabase.from("usuario_locais").insert(adicionar.map((local_id) => ({ usuario_id: editando.id, local_id })));
+        if (remover.length) {
+          const { error: e1 } = await supabase.from("usuario_locais").delete().eq("usuario_id", editando.id).in("local_id", remover);
+          if (e1) throw new Error(`Não consegui remover o local: ${e1.message}`);
+        }
+        if (adicionar.length) {
+          const { error: e2 } = await supabase.from("usuario_locais").insert(adicionar.map((local_id) => ({ usuario_id: editando.id, local_id })));
+          if (e2) throw new Error(`Não consegui salvar o local: ${e2.message}`);
+        }
       } else return;
       // jornada: troca a escala inteira da semana
       const { error: erroApagar } = await supabase.from("escalas").delete().eq("usuario_id", id);
