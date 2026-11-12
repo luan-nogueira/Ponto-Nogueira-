@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Bell, Building2, Clock, FileText, LogOut, MapPin, Menu, Radio, Users, X } from "lucide-react";
+import { Bell, Building2, Clock, FileText, LogOut, MapPin, Menu, Radio, Smartphone, Users, X } from "lucide-react";
 import { Sessao, useEmpresa, useUsuario } from "@/components/Sessao";
 import { Avatar } from "@/components/ui";
 import { TrocaTema } from "@/components/Tema";
@@ -17,6 +17,7 @@ const menu = [
   { href: "/alertas", nome: "Alertas", icone: Bell },
   { href: "/colaboradores", nome: "Colaboradores", curto: "Equipe", icone: Users },
   { href: "/locais", nome: "Locais", icone: MapPin },
+  { href: "/celulares", nome: "Celulares", icone: Smartphone, soAdmin: true },
   { href: "/empresa", nome: "Empresa", icone: Building2, soAdmin: true },
 ];
 

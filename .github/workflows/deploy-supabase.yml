@@ -32,5 +32,7 @@ jobs:
           supabase link --project-ref "$REF"
       - name: Atualizar o banco
         run: supabase db push --include-all
-      - name: Publicar a função de contas
-        run: supabase functions deploy colaboradores
+      - name: Publicar as funções (contas e celulares)
+        run: |
+          supabase functions deploy colaboradores
+          supabase functions deploy celulares

@@ -18,3 +18,6 @@ enable_signup = false
 
 [functions.colaboradores]
 verify_jwt = true
+
+[functions.celulares]
+verify_jwt = true

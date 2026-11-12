@@ -191,3 +191,20 @@ do $$ begin
 exception when insufficient_privilege then raise notice 'ok - não vincula usuário de outra empresa';
 end $$;
 select pg_temp.sair();
+
+-- Celulares: só o admin lê a configuração; ninguém grava pelo navegador -------------
+insert into celulares_config (empresa_id, enterprise)
+select id, 'enterprises/LCteste' from empresas where nome = 'Empresa Teste';
+select pg_temp.entrar('00000000-0000-0000-0000-00000000000a');
+select pg_temp.afirmar((select count(*) from celulares_config) = 1, 'admin vê a configuração dos celulares');
+do $$ begin
+  update celulares_config set enterprise = 'enterprises/outra';
+  if found then raise exception 'FALHOU: admin alterou a configuração pelo navegador'; end if;
+  raise notice 'ok - configuração dos celulares só muda pelo servidor';
+exception when insufficient_privilege then raise notice 'ok - configuração dos celulares só muda pelo servidor';
+end $$;
+select pg_temp.entrar('00000000-0000-0000-0000-000000000002');
+select pg_temp.afirmar((select count(*) from celulares_config) = 0, 'colaborador não vê a configuração dos celulares');
+select pg_temp.entrar('00000000-0000-0000-0000-0000000000b0');
+select pg_temp.afirmar((select count(*) from celulares_config) = 0, 'outra empresa não vê a configuração dos celulares');
+select pg_temp.sair();

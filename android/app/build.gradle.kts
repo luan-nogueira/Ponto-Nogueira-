@@ -18,7 +18,8 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "br.com.ponto.app"
+        // pacote único: é o nome do app na Play Store privada da empresa (celulares gerenciados)
+        applicationId = "br.com.pontonogueira.app"
         minSdk = 26
         targetSdk = 35
         // no CI, cada build ganha um número maior (o Android só atualiza para versão igual ou maior)

@@ -14,3 +14,13 @@ export async function gerenciarColaborador(corpo: Record<string, unknown>) {
   }
   return data;
 }
+
+// Chama a edge function dos celulares da empresa (Google Android Management).
+export async function celulares<T = Record<string, unknown>>(corpo: Record<string, unknown>): Promise<T> {
+  const { data, error } = await supabase.functions.invoke("celulares", { body: corpo });
+  if (error) {
+    const detalhe = await (error as { context?: Response }).context?.json?.().catch(() => null);
+    throw new Error(detalhe?.erro ?? error.message);
+  }
+  return data as T;
+}
