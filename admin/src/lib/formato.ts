@@ -76,6 +76,19 @@ export function nomeDoMes(mes: string) {
   return nome.charAt(0).toUpperCase() + nome.slice(1);
 }
 
+/** "2026-10-05" ou um ISO com hora → "05/10/2026" (data pura não sofre fuso). */
+export function dataBR(valor: string) {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(valor)) return `${valor.slice(8, 10)}/${valor.slice(5, 7)}/${valor.slice(0, 4)}`;
+  return new Date(valor).toLocaleDateString("pt-BR", { timeZone: fuso });
+}
+
+/** Bytes em texto curto ("1,2 MB"). */
+export function tamanhoArquivo(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1).replace(".", ",")} MB`;
+}
+
 /** "2026-10-05" → "05/10 seg" */
 export function diaCurto(data: string) {
   const d = new Date(`${data}T12:00:00Z`);

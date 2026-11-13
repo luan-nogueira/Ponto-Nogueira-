@@ -17,6 +17,11 @@ const nomeSituacao: Record<SituacaoDia, string> = {
   em_revisao: "Em revisão",
   em_andamento: "Em andamento",
   futuro: "",
+  ausencia_folga: "Folga lançada",
+  ausencia_ferias: "Férias",
+  ausencia_atestado: "Atestado",
+  ausencia_licenca: "Licença",
+  ausencia_outro: "Ausência",
 };
 
 const estiloSituacao: Record<SituacaoDia, string> = {
@@ -28,6 +33,11 @@ const estiloSituacao: Record<SituacaoDia, string> = {
   em_revisao: "border border-neutral-300 text-suave",
   em_andamento: "bg-tinta text-white",
   futuro: "",
+  ausencia_folga: "border border-neutral-300 text-tinta",
+  ausencia_ferias: "border border-neutral-300 text-tinta",
+  ausencia_atestado: "border border-neutral-300 text-tinta",
+  ausencia_licenca: "border border-neutral-300 text-tinta",
+  ausencia_outro: "border border-neutral-300 text-tinta",
 };
 
 type Totais = ReturnType<typeof somar>;
@@ -299,7 +309,7 @@ function Folha({ empresa, pessoa, nome, mes, dias, totais }: {
             {dias === null && <LinhasEsqueleto colunas={8} linhas={8} />}
             {dias?.map((d) => {
               const { dia, semana } = diaCurto(d.data);
-              const apagado = d.situacao === "folga" || d.situacao === "feriado" || d.situacao === "futuro";
+              const apagado = d.situacao === "folga" || d.situacao === "feriado" || d.situacao === "futuro" || (d.situacao.startsWith("ausencia_") && d.falta_min === 0);
               const extra = d.extra50_min + d.extra100_min;
               return (
                 <tr key={d.data} className={apagado ? "text-neutral-400" : ""}>
@@ -380,7 +390,7 @@ function Marcas({ d }: { d: DiaEspelho }) {
 
 function DiaCelular({ d }: { d: DiaEspelho }) {
   const { dia, semana } = diaCurto(d.data);
-  const apagado = d.situacao === "folga" || d.situacao === "feriado" || d.situacao === "futuro";
+  const apagado = d.situacao === "folga" || d.situacao === "feriado" || d.situacao === "futuro" || (d.situacao.startsWith("ausencia_") && d.falta_min === 0);
   const extra = d.extra50_min + d.extra100_min;
   const resumo = [
     d.trabalhado_min > 0 && `${horas(d.trabalhado_min)} trabalhadas`,

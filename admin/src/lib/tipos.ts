@@ -79,7 +79,10 @@ export interface Empresa {
   logo_url: string | null;
 }
 
-export type SituacaoDia = "normal" | "falta" | "folga" | "feriado" | "incompleto" | "em_revisao" | "em_andamento" | "futuro";
+export type TipoAusencia = "folga" | "ferias" | "atestado" | "licenca" | "outro";
+
+export type SituacaoDia = "normal" | "falta" | "folga" | "feriado" | "incompleto" | "em_revisao" | "em_andamento" | "futuro"
+  | `ausencia_${TipoAusencia}`;
 
 export interface DiaEspelho {
   usuario_id: string;
@@ -110,4 +113,27 @@ export interface Feriado {
   id: string;
   data: string;
   nome: string;
+}
+
+export interface Ausencia {
+  id: string;
+  usuario_id: string;
+  tipo: TipoAusencia;
+  inicio: string;
+  fim: string;
+  abona: boolean;
+  observacao: string | null;
+  criado_em: string;
+}
+
+export interface Documento {
+  id: string;
+  usuario_id: string;
+  nome: string;
+  categoria: string;
+  caminho: string;
+  tamanho: number | null;
+  tipo_arquivo: string | null;
+  observacao: string | null;
+  criado_em: string;
 }
