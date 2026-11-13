@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useUsuario } from "@/components/Sessao";
 import { Avatar } from "@/components/ui";
+import { FichaColaborador } from "@/components/FichaColaborador";
 import { gerenciarColaborador, supabase } from "@/lib/supabase";
 import type { Escala, Local, Papel, Usuario } from "@/lib/tipos";
 
@@ -38,6 +39,7 @@ export default function PaginaColaboradores() {
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [mostrarInativos, setMostrarInativos] = useState(false);
+  const [ficha, setFicha] = useState<Usuario | null>(null);
 
   const carregar = useCallback(async () => {
     const [p, l, v, e] = await Promise.all([
@@ -56,6 +58,7 @@ export default function PaginaColaboradores() {
 
   function abrir(u: Usuario | "novo") {
     setErro(null);
+    setFicha(null);
     setEditando(u);
     if (u === "novo") {
       setForm(vazio);
@@ -214,6 +217,8 @@ export default function PaginaColaboradores() {
         </form>
       )}
 
+      {ficha && <FichaColaborador key={ficha.id} pessoa={ficha} empresaId={eu.empresa_id} fechar={() => setFicha(null)} />}
+
       <div className="cartao overflow-x-auto animate-entrar [animation-delay:120ms]">
         <table className="tabela">
           <thead><tr><th>Nome</th><th>E-mail</th><th>Cargo</th><th>Perfil</th><th>Locais</th><th></th></tr></thead>
@@ -231,6 +236,8 @@ export default function PaginaColaboradores() {
                 <td data-rotulo="Perfil"><span className={`selo capitalize ${u.papel === "colaborador" ? "bg-neutral-100" : "bg-tinta text-white"}`}>{u.papel}</span></td>
                 <td data-rotulo="Locais" className="cheio">{vinculos.filter((v) => v.usuario_id === u.id).map((v) => locais.find((l) => l.id === v.local_id)?.nome).filter(Boolean).join(", ") || "—"}</td>
                 <td className="acoes whitespace-nowrap text-right">
+                  <button className="mr-3 font-medium text-tinta underline-offset-4 hover:underline"
+                    onClick={() => { setEditando(null); setFicha(u); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Folgas e documentos</button>
                   {souAdmin && (
                     <>
                       <button className="font-medium text-tinta underline-offset-4 hover:underline" onClick={() => abrir(u)}>Editar</button>
