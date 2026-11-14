@@ -23,6 +23,13 @@ export default function PaginaAlertas() {
     carregar();
   }
 
+  async function excluir(ids: string[]) {
+    if (!ids.length || !confirm(ids.length === 1 ? "Excluir este alerta?" : `Excluir os ${ids.length} alertas da lista?`)) return;
+    const { error } = await supabase.from("alertas").delete().in("id", ids);
+    if (error) alert(error.message);
+    carregar();
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -32,6 +39,7 @@ export default function PaginaAlertas() {
             <input type="checkbox" checked={soNaoLidos} onChange={(e) => setSoNaoLidos(e.target.checked)} /> Só não lidos
           </label>
           <button className="botao-sec" onClick={() => marcarLidos(alertas.filter((a) => !a.lido).map((a) => a.id))}>Marcar todos como lidos</button>
+          <button className="botao-sec" disabled={!alertas.length} onClick={() => excluir(alertas.map((a) => a.id))}>Excluir os da lista</button>
         </div>
       </div>
       <div className="cartao overflow-x-auto animate-entrar [animation-delay:120ms]">
@@ -52,7 +60,10 @@ export default function PaginaAlertas() {
                     </a>
                   )}
                 </td>
-                <td className="acoes text-right">{!a.lido && <button className="font-medium text-tinta underline-offset-4 hover:underline" onClick={() => marcarLidos([a.id])}>Lido</button>}</td>
+                <td className="acoes whitespace-nowrap text-right">
+                  {!a.lido && <button className="font-medium text-tinta underline-offset-4 hover:underline" onClick={() => marcarLidos([a.id])}>Lido</button>}
+                  <button className="ml-3 text-suave underline-offset-4 hover:text-perigo hover:underline" onClick={() => excluir([a.id])}>Excluir</button>
+                </td>
               </tr>
             ))}
             {alertas.length === 0 && <tr><td colSpan={5} className="text-suave">Nenhum alerta.</td></tr>}

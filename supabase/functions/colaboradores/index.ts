@@ -4,6 +4,7 @@
 // POST   { acao: "criar", nome, email, senha, cpf?, pis?, cargo?, papel?, locais?: uuid[] }
 // POST   { acao: "senha", usuario_id, senha }
 // POST   { acao: "ativo", usuario_id, ativo }
+// POST   { acao: "excluir", usuario_id }  (depois do painel chamar excluir_dados_colaborador)
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const cors = {
@@ -97,6 +98,30 @@ Deno.serve(async (req) => {
       await servico.from("usuarios").update({ ativo }).eq("id", corpo.usuario_id);
       // desativado não consegue mais entrar
       await servico.auth.admin.updateUserById(corpo.usuario_id, { ban_duration: ativo ? "none" : "876000h" });
+      return resposta({ ok: true });
+    }
+
+    case "excluir": {
+      if (!(await alvoDaEmpresa(corpo.usuario_id))) return resposta({ erro: "Usuário não encontrado" }, 404);
+      if (corpo.usuario_id === auth.user.id) return resposta({ erro: "Você não pode excluir a si mesmo" }, 400);
+      // arquivos do colaborador: fotos das batidas e documentos
+      const pastas: [string, string][] = [
+        ["fotos-ponto", corpo.usuario_id],
+        ["documentos", `${admin.empresa_id}/${corpo.usuario_id}`],
+      ];
+      for (const [balde, pasta] of pastas) {
+        for (;;) {
+          const { data: arquivos } = await servico.storage.from(balde).list(pasta, { limit: 100 });
+          if (!arquivos?.length) break;
+          const { error } = await servico.storage.from(balde).remove(arquivos.map((a) => `${pasta}/${a.name}`));
+          if (error) break;
+        }
+      }
+      // apaga o login; o perfil (usuarios) e o que depende dele saem em cascata
+      const { error } = await servico.auth.admin.deleteUser(corpo.usuario_id);
+      if (error) {
+        return resposta({ erro: `Não consegui excluir: ainda há registros ligados a esta pessoa (${error.message})` }, 400);
+      }
       return resposta({ ok: true });
     }
 

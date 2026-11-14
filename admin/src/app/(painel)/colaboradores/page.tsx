@@ -131,6 +131,19 @@ export default function PaginaColaboradores() {
     }
   }
 
+  async function excluir(u: Usuario) {
+    if (!confirm(`Excluir ${u.nome} para sempre?\n\nApaga a conta de login, todas as batidas, fotos, trajetos, folgas e documentos dessa pessoa. Não dá para desfazer.\n\nSe ela só saiu da empresa, prefira "Desativar", que guarda o histórico.`)) return;
+    try {
+      const { error } = await supabase.rpc("excluir_dados_colaborador", { p_usuario: u.id });
+      if (error) throw new Error(error.message);
+      await gerenciarColaborador({ acao: "excluir", usuario_id: u.id });
+      if (ficha?.id === u.id) setFicha(null);
+      carregar();
+    } catch (err) {
+      alert((err as Error).message);
+    }
+  }
+
   const lista = pessoas.filter((p) => mostrarInativos || p.ativo);
 
   return (
@@ -243,6 +256,9 @@ export default function PaginaColaboradores() {
                       <button className="font-medium text-tinta underline-offset-4 hover:underline" onClick={() => abrir(u)}>Editar</button>
                       {u.id !== eu.id && (
                         <button className="ml-3 text-suave underline-offset-4 hover:text-tinta hover:underline" onClick={() => alternarAtivo(u)}>{u.ativo ? "Desativar" : "Reativar"}</button>
+                      )}
+                      {u.id !== eu.id && (
+                        <button className="ml-3 text-suave underline-offset-4 hover:text-perigo hover:underline" onClick={() => excluir(u)}>Excluir</button>
                       )}
                     </>
                   )}

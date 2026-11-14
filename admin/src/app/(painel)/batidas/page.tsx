@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Mapa from "@/components/Mapa";
 import { FotoBatida } from "@/components/FotoBatida";
 import { useUsuario } from "@/components/Sessao";
-import { supabase } from "@/lib/supabase";
+import { excluirBatidas, supabase } from "@/lib/supabase";
 import { dataHora, inicioDoDia, nomeStatus, nomeTipo } from "@/lib/formato";
 import { LinhasEsqueleto, SeloStatus, Vazio } from "@/components/ui";
 import type { Batida, Local, StatusBatida, Usuario } from "@/lib/tipos";
@@ -24,6 +24,8 @@ export default function PaginaBatidas() {
   const [batidas, setBatidas] = useState<Batida[]>([]);
   const [aberta, setAberta] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(true);
+  const [marcadas, setMarcadas] = useState<string[]>([]);
+  const souAdmin = eu.papel === "admin";
 
   useEffect(() => {
     supabase.from("usuarios").select("id, nome").eq("papel", "colaborador").order("nome")
@@ -46,6 +48,7 @@ export default function PaginaBatidas() {
     if (status) consulta = consulta.eq("status", status);
     const { data } = await consulta;
     setBatidas((data as Batida[]) ?? []);
+    setMarcadas([]);
     setCarregando(false);
   }, [de, ate, colaborador, status]);
 
@@ -56,6 +59,19 @@ export default function PaginaBatidas() {
       .update({ status: novo, revisado_por: eu.id, revisado_em: new Date().toISOString() })
       .eq("id", b.id);
     carregar();
+  }
+
+  async function excluir(ids: string[]) {
+    if (!ids.length) return;
+    const qtd = ids.length === 1 ? "esta batida" : `estas ${ids.length} batidas`;
+    if (!confirm(`Excluir ${qtd} para sempre? A foto também é apagada e não dá para desfazer.\n\nUse só para apagar testes: pela lei (Portaria 671), batidas reais devem ser guardadas.`)) return;
+    try {
+      await excluirBatidas(ids);
+      setAberta(null);
+      carregar();
+    } catch (err) {
+      alert((err as Error).message);
+    }
   }
 
   function exportarCSV() {
@@ -97,18 +113,34 @@ export default function PaginaBatidas() {
           </select>
         </label>
         <button className="botao-sec" onClick={exportarCSV} disabled={!batidas.length}>Exportar CSV</button>
+        {souAdmin && marcadas.length > 0 && (
+          <button className="botao-sec border-perigo text-perigo" onClick={() => excluir(marcadas)}>Excluir {marcadas.length} {marcadas.length === 1 ? "marcada" : "marcadas"}</button>
+        )}
       </div>
 
       <div className="cartao overflow-x-auto animate-entrar [animation-delay:120ms]">
         <table className="tabela">
           <thead>
-            <tr><th>Foto</th><th>Data e hora</th><th>Colaborador</th><th>Tipo</th><th>Local</th><th>Situação</th><th>NSR</th></tr>
+            <tr>
+              {souAdmin && (
+                <th className="w-8">
+                  <input type="checkbox" aria-label="Marcar todas" checked={batidas.length > 0 && marcadas.length === batidas.length}
+                    onChange={(e) => setMarcadas(e.target.checked ? batidas.map((b) => b.id) : [])} />
+                </th>
+              )}
+              <th>Foto</th><th>Data e hora</th><th>Colaborador</th><th>Tipo</th><th>Local</th><th>Situação</th><th>NSR</th></tr>
           </thead>
           <tbody>
             {batidas.map((b) => {
               const local = locais.find((l) => l.id === b.local_id);
               return [
                 <tr key={b.id} className="cursor-pointer hover:bg-neutral-50" onClick={() => setAberta(aberta === b.id ? null : b.id)}>
+                  {souAdmin && (
+                    <td className="w-8" onClick={(e) => e.stopPropagation()}>
+                      <input type="checkbox" aria-label="Marcar" checked={marcadas.includes(b.id)}
+                        onChange={(e) => setMarcadas(e.target.checked ? [...marcadas, b.id] : marcadas.filter((id) => id !== b.id))} />
+                    </td>
+                  )}
                   <td className="foto"><FotoBatida caminho={b.foto_path} tamanho={40} /></td>
                   <td data-rotulo="Data e hora" className="whitespace-nowrap">{dataHora(b.registrado_em)}{b.sincronizada_offline && <div className="text-xs text-suave">feita sem internet</div>}</td>
                   <td data-rotulo="Colaborador">{b.usuarios?.nome}</td>
@@ -122,7 +154,7 @@ export default function PaginaBatidas() {
                 </tr>,
                 aberta === b.id && (
                   <tr key={`${b.id}-mapa`}>
-                    <td colSpan={7} className="bg-neutral-50 p-4 animate-entrar">
+                    <td colSpan={souAdmin ? 8 : 7} className="bg-neutral-50 p-4 animate-entrar">
                       <div className="grid gap-4 md:grid-cols-[1fr_240px]">
                         <Mapa
                           className="h-72 w-full rounded-lg"
@@ -140,6 +172,9 @@ export default function PaginaBatidas() {
                               <button className="botao-sec" onClick={() => decidir(b, "rejeitada")}>Recusar</button>
                             </div>
                           )}
+                          {souAdmin && (
+                            <button className="pt-2 text-sm text-suave underline-offset-4 hover:text-perigo hover:underline" onClick={() => excluir([b.id])}>Excluir esta batida</button>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -147,8 +182,8 @@ export default function PaginaBatidas() {
                 ),
               ];
             })}
-            {carregando && batidas.length === 0 && <LinhasEsqueleto colunas={7} />}
-            {!carregando && batidas.length === 0 && <Vazio colunas={7} texto="Nenhuma batida no período." />}
+            {carregando && batidas.length === 0 && <LinhasEsqueleto colunas={souAdmin ? 8 : 7} />}
+            {!carregando && batidas.length === 0 && <Vazio colunas={souAdmin ? 8 : 7} texto="Nenhuma batida no período." />}
           </tbody>
         </table>
       </div>
