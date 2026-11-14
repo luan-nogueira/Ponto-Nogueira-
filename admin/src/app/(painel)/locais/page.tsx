@@ -57,6 +57,14 @@ export default function PaginaLocais() {
     carregar();
   }
 
+  async function excluir(l: Local) {
+    if (!confirm(`Excluir o local "${l.nome}"?\n\nAs batidas feitas nele continuam guardadas, mas sem o nome do local. Não dá para desfazer.`)) return;
+    const { error } = await supabase.rpc("excluir_local", { p_id: l.id });
+    if (error) { alert(error.message); return; }
+    if (editando !== "novo" && editando?.id === l.id) setEditando(null);
+    carregar();
+  }
+
   async function alternarAtivo(l: Local) {
     await supabase.from("locais").update({ ativo: !l.ativo }).eq("id", l.id);
     carregar();
@@ -130,6 +138,9 @@ export default function PaginaLocais() {
                 <td className="acoes whitespace-nowrap text-right">
                   <button className="font-medium text-tinta underline-offset-4 hover:underline" onClick={() => abrir(l)}>Editar</button>
                   <button className="ml-3 text-suave underline-offset-4 hover:text-tinta hover:underline" onClick={() => alternarAtivo(l)}>{l.ativo ? "Desativar" : "Reativar"}</button>
+                  {eu.papel === "admin" && (
+                    <button className="ml-3 text-suave underline-offset-4 hover:text-perigo hover:underline" onClick={() => excluir(l)}>Excluir</button>
+                  )}
                 </td>
               </tr>
             ))}
